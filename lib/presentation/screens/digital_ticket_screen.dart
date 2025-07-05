@@ -2,22 +2,31 @@ import 'package:flutter/material.dart';
 import 'example_screen.dart';
 import 'dart:async';
 
-class DidgitalTicketScreen extends StatefulWidget {
+/// Экран отображения электронного талона с таймером.
+class DigitalTicketScreen extends StatefulWidget {
   final String serviceName;
+  final String ticketNumber;
+  final int timeout;
 
-  const DidgitalTicketScreen({required this.serviceName, super.key});
+  const DigitalTicketScreen({
+    required this.serviceName,
+    required this.ticketNumber,
+    required this.timeout,
+    super.key,
+  });
 
   @override
-  State<DidgitalTicketScreen> createState() => _DidgitalTicketScreenState();
+  State<DigitalTicketScreen> createState() => _DigitalTicketScreenState();
 }
 
-class _DidgitalTicketScreenState extends State<DidgitalTicketScreen> {
-  int _secondsRemaining = 15;
-  late Timer _timer;
+class _DigitalTicketScreenState extends State<DigitalTicketScreen> {
+  late int _secondsRemaining;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
+    _secondsRemaining = widget.timeout;
     _startTimer();
   }
 
@@ -27,23 +36,19 @@ class _DidgitalTicketScreenState extends State<DidgitalTicketScreen> {
         if (_secondsRemaining > 0) {
           _secondsRemaining--;
         } else {
-          _timer.cancel();
-          _navigateToExampleScreen();
+          _timer?.cancel();
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const ExampleScreen()),
+          );
         }
       });
     });
   }
 
-  void _navigateToExampleScreen() {
-    Navigator.pushAndRemoveUntil(context, 
-    MaterialPageRoute(builder: (_) => const ExampleScreen()), 
-    (route) => false,
-    );
-  }
-
   @override
-  void disponse() {
-    _timer.cancel();
+  void dispose() {
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -77,9 +82,9 @@ class _DidgitalTicketScreenState extends State<DidgitalTicketScreen> {
                     border: Border.all(color: Colors.blue, width: 3),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
-                    'Номер талона', 
-                    style: TextStyle(fontSize: 100, fontWeight: FontWeight.normal),
+                  child: Text(
+                    widget.ticketNumber,
+                    style: const TextStyle(fontSize: 100, fontWeight: FontWeight.normal),
                   ),
                 ),
               ],
@@ -97,7 +102,7 @@ class _DidgitalTicketScreenState extends State<DidgitalTicketScreen> {
                   style: const TextStyle(fontSize: 40, color: Colors.blueGrey),
                 ),
               ],
-            ), 
+            ),
           ),
         ],
       ),

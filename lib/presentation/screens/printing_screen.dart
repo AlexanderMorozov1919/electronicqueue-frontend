@@ -2,22 +2,31 @@ import 'package:flutter/material.dart';
 import 'example_screen.dart';
 import 'dart:async';
 
+/// Экран печати талона с таймером возврата на главный экран.
 class PrintingScreen extends StatefulWidget {
   final String serviceName;
+  final String ticketNumber;
+  final int timeout;
 
-  const PrintingScreen({required this.serviceName, super.key});
+  const PrintingScreen({
+    required this.serviceName,
+    required this.ticketNumber,
+    required this.timeout,
+    super.key,
+  });
 
   @override
   State<PrintingScreen> createState() => _PrintingScreenState();
 }
 
 class _PrintingScreenState extends State<PrintingScreen> {
-  int _secondsRemaining = 10;
-  late Timer _timer;
+  late int _secondsRemaining;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
+    _secondsRemaining = widget.timeout;
     _startTimer();
   }
 
@@ -27,24 +36,19 @@ class _PrintingScreenState extends State<PrintingScreen> {
         if (_secondsRemaining > 0) {
           _secondsRemaining--;
         } else {
-          _timer.cancel();
-          _navigateToExampleScreen();
+          _timer?.cancel();
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const ExampleScreen()),
+          );
         }
       });
     });
   }
 
-  void _navigateToExampleScreen() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const ExampleScreen()),
-      (route) => false,
-    );
-  }
-
   @override
   void dispose() {
-    _timer.cancel(); 
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -64,10 +68,7 @@ class _PrintingScreenState extends State<PrintingScreen> {
               children: [
                 const Text(
                   'Возьмите талон',
-                  style: TextStyle(
-                    fontSize: 100,
-                    fontWeight: FontWeight.normal,
-                  ),
+                  style: TextStyle(fontSize: 100, fontWeight: FontWeight.normal),
                 ),
                 const SizedBox(height: 100),
                 Text(
@@ -83,8 +84,8 @@ class _PrintingScreenState extends State<PrintingScreen> {
             right: 0,
             child: Column(
               children: [
-                Icon(Icons.keyboard_arrow_down, size: 200),
-                SizedBox(height: 50),
+                const Icon(Icons.keyboard_arrow_down, size: 200),
+                const SizedBox(height: 50),
                 Text(
                   'Закроется через: $_secondsRemaining сек.',
                   style: const TextStyle(fontSize: 40, color: Colors.blueGrey),
