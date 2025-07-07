@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '/domain/usecases/navigate_to_selection_usecase.dart';
+import '../../domain/usecases/navigate_to_selection_usecase.dart';
 import '../widgets/centered_button.dart';
 import '../../data/api/ticket_api.dart';
 
