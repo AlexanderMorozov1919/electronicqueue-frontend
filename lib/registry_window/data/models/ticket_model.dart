@@ -2,13 +2,17 @@ import 'package:equatable/equatable.dart';
 import '../../domain/entities/ticket_entity.dart';
 import '../../core/utils/ticket_category.dart';
 
+// ВАЖНО: Мы сохраняем старые поля (isRegistered, isCompleted, category)
+// чтобы не сломать остальную часть приложения, которая все еще работает с заглушками.
 class TicketModel extends Equatable {
   final String id;
   final String number;
-  final TicketCategory category;
-  final bool isRegistered;
-  final bool isCompleted;
+  final TicketCategory category; // Оставляем для старой логики
+  final bool isRegistered; // Оставляем для старой логики
+  final bool isCompleted; // Оставляем для старой логики
   final DateTime createdAt;
+  final String? status; // Новое поле из API
+  final int? windowNumber; // Новое поле из API
 
   const TicketModel({
     required this.id,
@@ -17,16 +21,19 @@ class TicketModel extends Equatable {
     this.isRegistered = false,
     this.isCompleted = false,
     required this.createdAt,
+    this.status,
+    this.windowNumber,
   });
 
-  factory TicketModel.fromEntity(TicketEntity entity) {
+  /// Новый конструктор из JSON ответа бэкенда
+  factory TicketModel.fromJson(Map<String, dynamic> json) {
     return TicketModel(
-      id: entity.id,
-      number: entity.number,
-      category: entity.category,
-      isRegistered: entity.isRegistered,
-      isCompleted: entity.isCompleted,
-      createdAt: entity.createdAt,
+      id: json['id'].toString(), // API возвращает int, приводим к String
+      number: json['ticket_number'],
+      category: TicketCategory.other, // Для талонов с API ставим заглушку
+      createdAt: DateTime.parse(json['created_at']),
+      status: json['status'],
+      windowNumber: json['window_number'],
     );
   }
 
@@ -60,5 +67,14 @@ class TicketModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, number, category, isRegistered, isCompleted, createdAt];
+  List<Object?> get props => [
+    id,
+    number,
+    category,
+    isRegistered,
+    isCompleted,
+    createdAt,
+    status,
+    windowNumber,
+  ];
 }

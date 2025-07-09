@@ -19,5 +19,12 @@ class TicketEntity extends Equatable {
   });
 
   @override
-  List<Object?> get props => [id, number, category, isRegistered, isCompleted, createdAt];
+  List<Object?> get props => [
+    id,
+    number,
+    category,
+    isRegistered,
+    isCompleted,
+    createdAt,
+  ];
 }
