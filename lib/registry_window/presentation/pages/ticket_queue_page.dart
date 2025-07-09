@@ -62,24 +62,37 @@ class TicketQueueView extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Expanded(
-                  flex: 2,
-                  child: CategoriesSection(),
-                ),
+                const Expanded(flex: 2, child: CategoriesSection()),
                 const SizedBox(width: 20),
                 Expanded(
                   flex: 3,
                   child: Column(
                     children: [
-                      const Expanded(
-                        child: TicketsListSection(),
-                      ),
+                      const Expanded(child: TicketsListSection()),
                       const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: () {
-                          context.read<TicketBloc>().add(CallNextTicketEvent());
-                        },
-                        child: const Text(AppConstants.callNextButton),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            context.read<TicketBloc>().add(
+                              CallNextTicketEvent(),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 60),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            foregroundColor: Colors.white,
+                            textStyle: const TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.normal,
+                            ),
+                            backgroundColor: Colors.blue,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(AppConstants.callNextButton),
+                        ),
                       ),
                     ],
                   ),
@@ -131,6 +144,17 @@ class CurrentTicketSection extends StatelessWidget {
                                   .read<TicketBloc>()
                                   .add(RegisterCurrentTicketEvent());
                             },
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(150, 50),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 12),
+                              textStyle: const TextStyle(fontSize: 18),
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
                             child: const Text(AppConstants.registerButton),
                           ),
                           const SizedBox(width: 10),
@@ -140,6 +164,17 @@ class CurrentTicketSection extends StatelessWidget {
                                   .read<TicketBloc>()
                                   .add(CompleteCurrentTicketEvent());
                             },
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(150, 50),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 12),
+                              textStyle: const TextStyle(fontSize: 18),
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
                             child: const Text(AppConstants.completeButton),
                           ),
                         ],
@@ -156,6 +191,7 @@ class CurrentTicketSection extends StatelessWidget {
     );
   }
 }
+
 
 class CategoriesSection extends StatelessWidget {
   const CategoriesSection({super.key});
@@ -179,9 +215,9 @@ class CategoriesSection extends StatelessWidget {
                 child: ListTile(
                   title: Text(category.name),
                   onTap: () {
-                    context
-                        .read<TicketBloc>()
-                        .add(LoadTicketsByCategoryEvent(category));
+                    context.read<TicketBloc>().add(
+                      LoadTicketsByCategoryEvent(category),
+                    );
                   },
                 ),
               );
