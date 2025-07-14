@@ -19,12 +19,16 @@ class TicketApi {
   Future<List<ServiceEntity>> fetchServices() async {
     final response = await http.get(Uri.parse('$baseUrl/api/tickets/services'));
     if (response.statusCode == 200) {
-      final List services = json.decode(response.body)['services'];
+      final decoded = json.decode(response.body);
+      if (decoded is! Map || !decoded.containsKey('services')) {
+        throw Exception('Некорректный формат ответа: нет ключа services');
+      }
+      final List services = decoded['services'];
       return services
           .map((e) => ServiceEntity(
-                id: e['ID'] ?? e['id'],
-                title: e['Name'] ?? e['name'],
-                letter: e['Letter'] ?? e['letter'],
+                id: e['id'],
+                title: e['title'],
+                letter: e['letter'],
               ))
           .toList();
     } else {

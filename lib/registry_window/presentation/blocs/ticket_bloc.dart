@@ -5,7 +5,6 @@ import '../../domain/usecases/complete_current_ticket.dart';
 import '../../domain/usecases/get_current_ticket.dart';
 import '../../domain/usecases/get_tickets_by_category.dart';
 import '../../domain/usecases/register_current_ticket.dart';
-
 import 'ticket_event.dart';
 import 'ticket_state.dart';
 

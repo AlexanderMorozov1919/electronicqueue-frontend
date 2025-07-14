@@ -1,4 +1,5 @@
 import '../models/ticket_model.dart';
+import '../../domain/entities/ticket_entity.dart';
 import '../../core/utils/ticket_category.dart';
 import '../api/registry_api.dart'; // <-- ИМПОРТИРУЕМ НАШ API КЛИЕНТ
 
