@@ -18,6 +18,24 @@ class TicketEntity extends Equatable {
     required this.createdAt,
   });
 
+  TicketEntity copyWith({
+    String? id,
+    String? number,
+    TicketCategory? category,
+    bool? isRegistered,
+    bool? isCompleted,
+    DateTime? createdAt,
+  }) {
+    return TicketEntity(
+      id: id ?? this.id,
+      number: number ?? this.number,
+      category: category ?? this.category,
+      isRegistered: isRegistered ?? this.isRegistered,
+      isCompleted: isCompleted ?? this.isCompleted,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
   @override
   List<Object?> get props => [id, number, category, isRegistered, isCompleted, createdAt];
 }

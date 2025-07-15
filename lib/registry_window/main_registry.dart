@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:http/http.dart' as http;
+import 'data/datasources/ticket_remote_data_source.dart';
 import 'presentation/pages/ticket_queue_page.dart';
-import 'data/datasources/ticket_local_data_source.dart';
 import 'data/repositories/ticket_repository_impl.dart';
 import 'domain/repositories/ticket_repository.dart';
 
@@ -14,10 +15,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RepositoryProvider<TicketRepository>(
-      create: (context) => TicketRepositoryImpl(
-        localDataSource: TicketLocalDataSourceImpl(),
-      ),
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<TicketRepository>(
+          create: (context) => TicketRepositoryImpl(
+            remoteDataSource: TicketRemoteDataSourceImpl(client: http.Client()),
+          ),
+        ),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Электронная очередь',

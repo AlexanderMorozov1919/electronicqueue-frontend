@@ -17,31 +17,28 @@ abstract class TicketState extends Equatable {
 
 class TicketInitial extends TicketState {}
 
-class TicketLoading extends TicketState {}
+class TicketLoading extends TicketState {
+   const TicketLoading({
+      super.currentTicket, 
+      super.ticketsByCategory
+   });
+}
 
 class TicketLoaded extends TicketState {
-  @override
-  final TicketEntity? currentTicket;
-  @override
-  final Map<TicketCategory, List<TicketEntity>> ticketsByCategory;
-
   const TicketLoaded({
-    this.currentTicket,
-    this.ticketsByCategory = const {},
-  }) : super(
-          currentTicket: currentTicket,
-          ticketsByCategory: ticketsByCategory,
-        );
-
-  @override
-  List<Object?> get props => [currentTicket, ticketsByCategory];
+    super.currentTicket,
+    super.ticketsByCategory = const {},
+  });
 }
 
 class TicketError extends TicketState {
   final String message;
-
-  const TicketError({required this.message});
+  const TicketError({
+    required this.message, 
+    super.currentTicket, 
+    super.ticketsByCategory = const {},
+  });
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message, currentTicket, ticketsByCategory];
 }
