@@ -1,36 +1,25 @@
 services:
-  main_terminal:
-    build:
-      context: .
-      args:
-        TARGET_MAIN: terminal/main_terminal.dart
-    ports:
-      - "3000:80"
-    env_file:
-      - .env
-    container_name: electronicqueue_main_terminal
-
-  main_registry:
-    build:
-      context: .
-      args:
-        TARGET_MAIN: registry_window/main_registry.dart
-    ports:
-      - "3001:80"
-    env_file:
-      - .env
-    container_name: electronicqueue_main_registry
-
   main_doctor:
     build:
       context: .
       args:
         TARGET_MAIN: doctor_window/main_doctor.dart
     ports:
-      - "3002:80"
+      - "3000:80"
     env_file:
       - .env
     container_name: electronicqueue_main_doctor
+
+  main_queue_doctor:
+    build:
+      context: .
+      args:
+        TARGET_MAIN: queue_doctor/main_queue_doctor.dart
+    ports:
+      - "3001:80"
+    env_file:
+      - .env
+    container_name: electronicqueue_main_queue_doctor
 
   main_reception:
     build:
@@ -38,8 +27,30 @@ services:
       args:
         TARGET_MAIN: queue_reception/main_reception.dart
     ports:
-      - "3003:80"
+      - "3002:80"
     env_file:
       - .env
     container_name: electronicqueue_main_reception
+
+  main_registry:
+    build:
+      context: .
+      args:
+        TARGET_MAIN: registry_window/main_registry.dart
+    ports:
+      - "3003:80"
+    env_file:
+      - .env
+    container_name: electronicqueue_main_registry
+
+  main_terminal:
+    build:
+      context: .
+      args:
+        TARGET_MAIN: terminal/main_terminal.dart
+    ports:
+      - "3004:80"
+    env_file:
+      - .env
+    container_name: electronicqueue_main_terminal
 
