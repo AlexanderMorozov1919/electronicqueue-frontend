@@ -1,46 +1,74 @@
+import 'package:dartz/dartz.dart';
+import '../../core/errors/exceptions.dart';
+import '../../core/errors/failures.dart';
 import '../../domain/repositories/ticket_repository.dart';
 import '../../domain/entities/ticket_entity.dart';
-import '../datasources/ticket_local_data_source.dart';
+import '../datasources/ticket_data_source.dart';
 import '../../core/utils/ticket_category.dart';
 
 class TicketRepositoryImpl implements TicketRepository {
-  final TicketLocalDataSource localDataSource;
+  final TicketDataSource remoteDataSource;
 
-  TicketRepositoryImpl({required this.localDataSource});
+  TicketRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<List<TicketEntity>> getTickets() async {
-    final tickets = await localDataSource.getTickets();
-    return tickets.map((model) => model.toEntity()).toList();
+  Future<Either<Failure, TicketEntity>> callNextTicket(int windowNumber) async { 
+    try {
+      final ticket = await remoteDataSource.callNextTicket(windowNumber);
+      return Right(ticket);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
   }
 
   @override
-  Future<TicketEntity?> getCurrentTicket() async {
-    final ticket = await localDataSource.getCurrentTicket();
-    return ticket?.toEntity();
+  Future<Either<Failure, void>> registerCurrentTicket(String ticketId) async {
+    try {
+      await remoteDataSource.updateTicketStatus(ticketId, 'зарегистрирован');
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
   }
 
   @override
-  Future<TicketEntity> callNextTicket() async {
-    final ticket = await localDataSource.callNextTicket();
-    return ticket.toEntity();
+  Future<Either<Failure, void>> completeCurrentTicket(String ticketId) async { 
+    try {
+      await remoteDataSource.updateTicketStatus(ticketId, 'завершен');
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
   }
 
   @override
-  Future<TicketEntity> registerCurrentTicket() async {
-    final ticket = await localDataSource.registerCurrentTicket();
-    return ticket.toEntity();
+  Future<Either<Failure, TicketEntity?>> getCurrentTicket() async {
+    try {
+      final ticket = await remoteDataSource.getCurrentTicket();
+      return Right(ticket);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
   }
 
   @override
-  Future<TicketEntity> completeCurrentTicket() async {
-    final ticket = await localDataSource.completeCurrentTicket();
-    return ticket.toEntity();
+  Future<Either<Failure, List<TicketEntity>>> getTicketsByCategory(
+      TicketCategory category) async {
+    try {
+      final tickets = await remoteDataSource.getTicketsByCategory(category);
+      return Right(tickets);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
   }
 
   @override
-  Future<List<TicketEntity>> getTicketsByCategory(TicketCategory category) async {
-    final tickets = await localDataSource.getTicketsByCategory(category);
-    return tickets.map((model) => model.toEntity()).toList();
+  Future<Either<Failure, List<TicketEntity>>> getTickets() async {
+    try {
+      final tickets = await remoteDataSource.getTickets();
+      return Right(tickets);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
   }
 }
