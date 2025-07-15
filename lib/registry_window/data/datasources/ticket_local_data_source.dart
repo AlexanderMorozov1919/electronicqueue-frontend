@@ -1,6 +1,5 @@
 import '../models/ticket_model.dart';
 
-import '../../domain/entities/ticket_entity.dart';
 
 import '../../core/utils/ticket_category.dart';
 

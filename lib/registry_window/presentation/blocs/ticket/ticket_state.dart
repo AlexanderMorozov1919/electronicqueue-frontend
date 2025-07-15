@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import '../../domain/entities/ticket_entity.dart';
-import '../../core/utils/ticket_category.dart';
+import '../../../domain/entities/ticket_entity.dart';
+import '../../../core/utils/ticket_category.dart';
 
 abstract class TicketState extends Equatable {
   final TicketEntity? currentTicket;

@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
-import '../../domain/usecases/call_next_ticket.dart';
-import '../../domain/usecases/complete_current_ticket.dart';
-import '../../domain/usecases/get_current_ticket.dart';
-import '../../domain/usecases/get_tickets_by_category.dart';
-import '../../domain/usecases/register_current_ticket.dart';
+import '../../../domain/usecases/call_next_ticket.dart';
+import '../../../domain/usecases/complete_current_ticket.dart';
+import '../../../domain/usecases/get_current_ticket.dart';
+import '../../../domain/usecases/get_tickets_by_category.dart';
+import '../../../domain/usecases/register_current_ticket.dart';
 import 'ticket_event.dart';
 import 'ticket_state.dart';
 
