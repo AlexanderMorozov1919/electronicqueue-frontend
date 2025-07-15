@@ -7,8 +7,6 @@ abstract class WaitingScreenState extends Equatable {
   List<Object> get props => [];
 }
 
-class WaitingScreenInitial extends WaitingScreenState {}
-
 class WaitingScreenLoading extends WaitingScreenState {}
 
 class WaitingScreenWaiting extends WaitingScreenState {
