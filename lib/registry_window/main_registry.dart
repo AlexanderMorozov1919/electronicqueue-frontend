@@ -5,6 +5,7 @@ import 'data/datasources/ticket_remote_data_source.dart';
 import 'presentation/pages/ticket_queue_page.dart';
 import 'data/repositories/ticket_repository_impl.dart';
 import 'domain/repositories/ticket_repository.dart';
+// import 'data/api/registry_api.dart'; 
 
 void main() {
   runApp(const MyApp());

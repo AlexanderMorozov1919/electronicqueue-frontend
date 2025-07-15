@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../core/utils/ticket_category.dart';
+import '../../../core/utils/ticket_category.dart';
 
 abstract class TicketEvent extends Equatable {
   const TicketEvent();

@@ -1,16 +1,14 @@
-// C:\dev\proj\electronicqueue-frontend\lib\registry_window\presentation\blocs\ticket_bloc.dart
-
 import 'dart:async';
 import 'package:bloc/bloc.dart';
-import '../../core/utils/ticket_category.dart';
-import '../../domain/usecases/call_next_ticket.dart';
-import '../../domain/usecases/complete_current_ticket.dart';
-import '../../domain/usecases/get_current_ticket.dart';
-import '../../domain/usecases/get_tickets_by_category.dart';
-import '../../domain/usecases/register_current_ticket.dart';
+import '../../../core/utils/ticket_category.dart';
+import '../../../domain/usecases/call_next_ticket.dart';
+import '../../../domain/usecases/complete_current_ticket.dart';
+import '../../../domain/usecases/get_current_ticket.dart';
+import '../../../domain/usecases/get_tickets_by_category.dart';
+import '../../../domain/usecases/register_current_ticket.dart';
 import 'ticket_event.dart';
 import 'ticket_state.dart';
-import '../../domain/entities/ticket_entity.dart';
+import '../../../domain/entities/ticket_entity.dart';
 
 class TicketBloc extends Bloc<TicketEvent, TicketState> {
   final CallNextTicket callNextTicket;

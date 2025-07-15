@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../blocs/ticket_bloc.dart';
+import '../blocs/ticket/ticket_bloc.dart';
 import '../../core/constants/app_constans.dart';
 import '../../core/utils/ticket_category.dart';
 import '../../domain/usecases/call_next_ticket.dart';
@@ -9,8 +9,8 @@ import '../../domain/usecases/complete_current_ticket.dart';
 import '../../domain/usecases/get_current_ticket.dart';
 import '../../domain/usecases/get_tickets_by_category.dart';
 import '../../domain/repositories/ticket_repository.dart';
-import '../../presentation/blocs/ticket_event.dart';
-import '../../presentation/blocs/ticket_state.dart';
+import '../blocs/ticket/ticket_event.dart';
+import '../blocs/ticket/ticket_state.dart';
 
 class TicketQueuePage extends StatelessWidget {
   const TicketQueuePage({super.key});

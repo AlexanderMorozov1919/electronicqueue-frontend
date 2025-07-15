@@ -12,20 +12,20 @@ class QueueStatusWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<QueueBloc, QueueState>(
-      builder: (BuildContext context, QueueState state) { 
+      builder: (context, state) {
         if (state is QueueLoading) {
           return const Center(child: CircularProgressIndicator());
         } else if (state is QueueError) {
           return Center(child: Text(state.message));
         } else if (state is QueueLoaded) {
-          return _buildQueueInterface(context, state.queue); 
+          return _buildQueueInterface(context, state.queue);
         }
         return const SizedBox();
       },
     );
   }
 
-  Widget _buildQueueInterface(BuildContext context, QueueEntity queue) { 
+  Widget _buildQueueInterface(BuildContext context, QueueEntity queue) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -43,21 +43,43 @@ class QueueStatusWidget extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Text(
-                        'Талон ${queue.currentTicket}',
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          'Талон ${queue.currentTicket}',
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
                         ),
                       ),
                     ],
                   )
-                : Text(
-                    'Очередь: ${queue.queueLength} талонов',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Очередь',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        '${queue.queueLength} талонов',
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ],
                   ),
           ),
         ),
@@ -65,16 +87,16 @@ class QueueStatusWidget extends StatelessWidget {
           width: double.infinity,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              backgroundColor: queue.isAppointmentInProgress 
+                  ? Colors.red 
+                  : Colors.blue,
+              padding: const EdgeInsets.symmetric(vertical: 20),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)
+                borderRadius: BorderRadius.circular(12),
               ),
-              
             ),
             onPressed: () {
-              final bloc = BlocProvider.of<QueueBloc>(context, listen: false);
-              
+              final bloc = context.read<QueueBloc>();
               if (queue.isAppointmentInProgress) {
                 bloc.add(EndAppointmentEvent());
               } else {
@@ -87,7 +109,7 @@ class QueueStatusWidget extends StatelessWidget {
                   ? 'Завершить прием'
                   : 'Вызвать следующего пациента',
               style: const TextStyle(
-                fontSize: 30,
+                fontSize: 18,
                 color: Colors.white,
               ),
             ),
