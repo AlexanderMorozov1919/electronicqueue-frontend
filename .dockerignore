@@ -1,0 +1,24 @@
+# Git
+.git
+.gitignore
+
+# Docker
+.dockerignore
+Dockerfile
+docker-compose.yaml
+README.md
+
+# Flutter/Dart
+.dart_tool/
+.idea/
+.packages
+build/
+linux/
+macos/
+windows/
+ios/
+android/
+
+# IDE settings
+*.iml
+.idea/
