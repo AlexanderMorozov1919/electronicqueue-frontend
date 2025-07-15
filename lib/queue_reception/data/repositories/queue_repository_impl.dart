@@ -3,7 +3,8 @@ import '../datasources/queue_remote_datasource.dart';
 import '../../domain/entities/ticket.dart';
 
 class QueueRepositoryImpl implements QueueRepository {
-  final FakeQueueRemoteDataSource remoteDataSource;
+
+  final SseQueueRemoteDataSource remoteDataSource;
 
   QueueRepositoryImpl(this.remoteDataSource);
 
