@@ -51,57 +51,84 @@ class TicketQueueView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const CurrentTicketSection(),
-          const SizedBox(height: 20),
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return BlocBuilder<TicketBloc, TicketState>(
+      builder: (context, state) {
+        if (state is TicketLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (state is TicketError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Expanded(flex: 2, child: CategoriesSection()),
-                const SizedBox(width: 20),
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    children: [
-                      const Expanded(child: TicketsListSection()),
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            context.read<TicketBloc>().add(
-                              CallNextTicketEvent(),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 60),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            foregroundColor: Colors.white,
-                            textStyle: const TextStyle(
-                              fontSize: 30,
-                              fontWeight: FontWeight.normal,
-                            ),
-                            backgroundColor: Colors.blue,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(AppConstants.callNextButton),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                Text('Ошибка: ${state.message}', style: const TextStyle(color: Colors.red, fontSize: 24)),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () => context.read<TicketBloc>().add(LoadCurrentTicketEvent()),
+                  child: const Text('Попробовать снова'),
+                )
               ],
             ),
+          );
+        }
+
+        bool canCallNext = true;
+        if (state is TicketLoaded && state.currentTicket != null) {
+          canCallNext = state.currentTicket!.isCompleted || state.currentTicket!.isRegistered;
+        }
+
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const CurrentTicketSection(),
+              const SizedBox(height: 20),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Expanded(flex: 2, child: CategoriesSection()),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        children: [
+                          const Expanded(child: TicketsListSection()),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: canCallNext ? () {
+                                context.read<TicketBloc>().add(CallNextTicketEvent());
+                              } : null, // Блокируем кнопку, если талон не обслужен
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(double.infinity, 60),
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                foregroundColor: Colors.white,
+                                textStyle: const TextStyle(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.normal,
+                                ),
+                                backgroundColor: Colors.blue,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                disabledBackgroundColor: Colors.grey,
+                              ),
+                              child: const Text(AppConstants.callNextButton),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -113,85 +140,87 @@ class CurrentTicketSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<TicketBloc, TicketState>(
       builder: (context, state) {
-        final currentTicket = state.currentTicket;
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  AppConstants.currentTicketLabel,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 10),
-                if (currentTicket != null)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        currentTicket.number,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+        if (state is TicketLoaded) {
+          final currentTicket = state.currentTicket;
+          final bool isTicketActive = currentTicket != null && !currentTicket.isCompleted && !currentTicket.isRegistered;
+
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    AppConstants.currentTicketLabel,
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  if (currentTicket != null)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          currentTicket.number,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: isTicketActive ? Colors.black : Colors.grey,
+                          ),
                         ),
-                      ),
-                      Row(
-                        children: [
-                          ElevatedButton(
-                            onPressed: () {
-                              context
-                                  .read<TicketBloc>()
-                                  .add(RegisterCurrentTicketEvent());
-                            },
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(150, 50),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
-                              textStyle: const TextStyle(fontSize: 18),
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                        Row(
+                          children: [
+                            ElevatedButton(
+                              onPressed: isTicketActive ? () {
+                                context.read<TicketBloc>().add(RegisterCurrentTicketEvent());
+                              } : null,
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(150, 50),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                textStyle: const TextStyle(fontSize: 18),
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor: Colors.grey,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               ),
+                              child: const Text(AppConstants.registerButton),
                             ),
-                            child: const Text(AppConstants.registerButton),
-                          ),
-                          const SizedBox(width: 10),
-                          ElevatedButton(
-                            onPressed: () {
-                              context
-                                  .read<TicketBloc>()
-                                  .add(CompleteCurrentTicketEvent());
-                            },
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(150, 50),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
-                              textStyle: const TextStyle(fontSize: 18),
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                            const SizedBox(width: 10),
+                            ElevatedButton(
+                              onPressed: isTicketActive ? () {
+                                context.read<TicketBloc>().add(CompleteCurrentTicketEvent());
+                              } : null,
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(150, 50),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                textStyle: const TextStyle(fontSize: 18),
+                                backgroundColor: Colors.orange,
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor: Colors.grey,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               ),
+                              child: const Text(AppConstants.completeButton),
                             ),
-                            child: const Text(AppConstants.completeButton),
-                          ),
-                        ],
-                      ),
-                    ],
-                  )
-                else
-                  const Text('Нет активного талона'),
-              ],
+                          ],
+                        ),
+                      ],
+                    )
+                  else
+                    const Text('Нет активного талона. Нажмите "Вызвать следующего".'),
+                ],
+              ),
             ),
+          );
+        }
+        return const Card(
+          child: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text('Загрузка...'),
           ),
         );
       },
     );
   }
 }
-
 
 class CategoriesSection extends StatelessWidget {
   const CategoriesSection({super.key});
@@ -215,13 +244,13 @@ class CategoriesSection extends StatelessWidget {
                 child: ListTile(
                   title: Text(category.name),
                   onTap: () {
-                    context.read<TicketBloc>().add(
-                      LoadTicketsByCategoryEvent(category),
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Просмотр по категориям временно недоступен'))
                     );
                   },
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
@@ -258,7 +287,9 @@ class TicketsListSection extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Expanded(
-                  child: ListView.builder(
+                  child: tickets.isEmpty
+                  ? const Center(child: Text('Нет данных для отображения.'))
+                  : ListView.builder(
                     itemCount: tickets.length,
                     itemBuilder: (context, index) {
                       final ticket = tickets[index];
