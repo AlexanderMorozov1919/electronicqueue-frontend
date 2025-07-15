@@ -12,7 +12,7 @@ void main() {
       providers: [
         BlocProvider(
           create: (context) => QueueDisplayBloc(
-            QueueRepositoryImpl(FakeQueueRemoteDataSource()),
+            QueueRepositoryImpl(SseQueueRemoteDataSource()),
           )..add(LoadTicketsEvent()),
         ),
       ],
