@@ -7,6 +7,12 @@ import 'data/repositories/ticket_repository_impl.dart';
 import 'domain/repositories/ticket_repository.dart';
 // import 'data/api/registry_api.dart'; 
 
+import 'data/repositories/auth_repository_impl.dart';
+import 'domain/repositories/auth_repository.dart';
+import 'presentation/pages/auth_page.dart';
+import 'presentation/blocs/auth/auth_bloc.dart';
+import 'domain/usecases/authenticate_user.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -18,6 +24,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
       providers: [
+        RepositoryProvider<AuthRepository>(
+          create: (context) => AuthRepositoryImpl(),
+        ),
         RepositoryProvider<TicketRepository>(
           create: (context) => TicketRepositoryImpl(
             remoteDataSource: TicketRemoteDataSourceImpl(client: http.Client()),
@@ -26,12 +35,23 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Электронная очередь',
+        title: 'Кабинет регистратуры',
         theme: ThemeData(
           primarySwatch: Colors.blue,
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
-        home: const TicketQueuePage(),
+        initialRoute: '/login',
+        routes: {
+          '/login': (context) => BlocProvider(
+                create: (context) => AuthBloc(
+                  authenticateUser: AuthenticateUser(
+                    RepositoryProvider.of<AuthRepository>(context),
+                  ),
+                ),
+                child: LoginPage(),
+              ),
+          '/main': (context) => const TicketQueuePage(),
+        },
       ),
     );
   }
