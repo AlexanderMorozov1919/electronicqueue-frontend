@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/utils/ticket_category.dart';
+import '../blocs/ticket/ticket_bloc.dart';
+import '../blocs/ticket/ticket_event.dart';
 
 class CategoriesSection extends StatelessWidget {
   const CategoriesSection({super.key});
@@ -23,12 +26,7 @@ class CategoriesSection extends StatelessWidget {
                 child: ListTile(
                   title: Text(category.name),
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Просмотр по категориям временно недоступен'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
+                    context.read<TicketBloc>().add(LoadTicketsByCategoryEvent(category));
                   },
                 ),
               );

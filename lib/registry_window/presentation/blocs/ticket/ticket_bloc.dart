@@ -6,9 +6,9 @@ import '../../../domain/usecases/complete_current_ticket.dart';
 import '../../../domain/usecases/get_current_ticket.dart';
 import '../../../domain/usecases/get_tickets_by_category.dart';
 import '../../../domain/usecases/register_current_ticket.dart';
+import '../../../domain/entities/ticket_entity.dart';
 import 'ticket_event.dart';
 import 'ticket_state.dart';
-import '../../../domain/entities/ticket_entity.dart';
 
 class TicketBloc extends Bloc<TicketEvent, TicketState> {
   final CallNextTicket callNextTicket;
@@ -29,18 +29,50 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
     on<CompleteCurrentTicketEvent>(_onCompleteCurrentTicket);
     on<LoadCurrentTicketEvent>(_onLoadCurrentTicket);
     on<LoadTicketsByCategoryEvent>(_onLoadTicketsByCategory);
+    on<ClearInfoMessageEvent>(_onClearInfoMessage);
   }
 
-  Future<void> _onCallNextTicket(
+Future<void> _onCallNextTicket(
     CallNextTicketEvent event,
     Emitter<TicketState> emit,
   ) async {
-    emit(TicketLoading(currentTicket: state.currentTicket));
+    emit(TicketLoading(
+      currentTicket: state.currentTicket,
+      ticketsByCategory: state.ticketsByCategory,
+      selectedCategory: state.selectedCategory,
+    ));
+    
     final result = await callNextTicket();
+    
     result.fold(
-      (failure) => emit(TicketError(message: failure.message, currentTicket: state.currentTicket)),
+      (failure) {
+        if (failure.message.contains('Очередь пуста')) {
+          emit(TicketLoaded(
+            currentTicket: state.currentTicket,
+            ticketsByCategory: state.ticketsByCategory,
+            selectedCategory: state.selectedCategory,
+            infoMessage: 'Очередь пуста',
+          ));
+        } else {
+          emit(TicketError(
+            message: failure.message,
+            currentTicket: state.currentTicket,
+            ticketsByCategory: state.ticketsByCategory,
+            selectedCategory: state.selectedCategory,
+          ));
+        }
+      },
       (ticket) => emit(TicketLoaded(currentTicket: ticket)),
     );
+  }
+
+  void _onClearInfoMessage(
+    ClearInfoMessageEvent event,
+    Emitter<TicketState> emit,
+  ) {
+    if (state is TicketLoaded) {
+      emit((state as TicketLoaded).copyWith(infoMessage: null));
+    }
   }
 
   Future<void> _onRegisterCurrentTicket(
@@ -103,6 +135,7 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
     emit(TicketLoading(
       currentTicket: state.currentTicket,
       ticketsByCategory: state.ticketsByCategory,
+      selectedCategory: event.category,
     ));
     
     final result = await getTicketsByCategory(event.category);
@@ -112,6 +145,7 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
           message: failure.message,
           currentTicket: state.currentTicket,
           ticketsByCategory: state.ticketsByCategory,
+          selectedCategory: state.selectedCategory,
         ));
       },
       (tickets) {
@@ -121,6 +155,7 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
         emit(TicketLoaded(
           currentTicket: state.currentTicket,
           ticketsByCategory: newMap,
+          selectedCategory: event.category,
         ));
       },
     );
