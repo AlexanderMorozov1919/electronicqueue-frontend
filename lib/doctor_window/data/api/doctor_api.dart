@@ -13,6 +13,11 @@ class DoctorApi {
       );
 
       if (response.statusCode == 200) {
+        // Проверяем, что response.body не null и не пустой
+        if (response.body.isEmpty || response.body == 'null') {
+          return [];
+        }
+        
         final List<dynamic> data = json.decode(response.body);
         return data.cast<Map<String, dynamic>>();
       } else {
@@ -39,6 +44,11 @@ class DoctorApi {
       );
 
       if (response.statusCode == 200) {
+        // Проверяем, что response.body не null и не пустой
+        if (response.body.isEmpty || response.body == 'null') {
+          throw Exception('Empty response from server');
+        }
+        
         final Map<String, dynamic> data = json.decode(response.body);
         return data['ticket'] as Map<String, dynamic>;
       } else {
@@ -62,6 +72,11 @@ class DoctorApi {
       print('DEBUG: Get active ticket response body: ${response.body}');
 
       if (response.statusCode == 200) {
+        // Проверяем, что response.body не null и не пустой
+        if (response.body.isEmpty || response.body == 'null') {
+          return null;
+        }
+        
         final List<dynamic> data = json.decode(response.body);
         if (data.isNotEmpty) {
           return data.first as Map<String, dynamic>;
@@ -90,6 +105,11 @@ class DoctorApi {
       print('DEBUG: Complete appointment response body: ${response.body}');
 
       if (response.statusCode == 200) {
+        // Проверяем, что response.body не null и не пустой
+        if (response.body.isEmpty || response.body == 'null') {
+          throw Exception('Empty response from server');
+        }
+        
         final Map<String, dynamic> data = json.decode(response.body);
         return data['ticket'] as Map<String, dynamic>;
       } else {
