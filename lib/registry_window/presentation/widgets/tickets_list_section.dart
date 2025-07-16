@@ -10,9 +10,7 @@ class TicketsListSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<TicketBloc, TicketState>(
       builder: (context, state) {
-        final selectedCategory = state.ticketsByCategory.keys.isNotEmpty
-            ? state.ticketsByCategory.keys.first
-            : null;
+        final selectedCategory = state.selectedCategory;
         final tickets = selectedCategory != null
             ? state.ticketsByCategory[selectedCategory] ?? []
             : [];
