@@ -24,3 +24,5 @@ class LoadTicketsByCategoryEvent extends TicketEvent {
   @override
   List<Object> get props => [category];
 }
+
+class ClearInfoMessageEvent extends TicketEvent {}

@@ -8,19 +8,36 @@ import 'categories_section.dart';
 import 'tickets_list_section.dart';
 import 'next_ticket_button.dart';
 import '../blocs/ticket/ticket_bloc.dart';
+import '../blocs/ticket/ticket_event.dart';
 
 class TicketQueueView extends StatelessWidget {
   const TicketQueueView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<TicketBloc, TicketState>(
-      builder: (context, state) {
-        if (state is TicketLoading) return const LoadingStateWidget();
-        if (state is TicketError) return ErrorStateWidget(message: state.message);
-        
-        return _buildMainContent(context, state);
+    return BlocListener<TicketBloc, TicketState>(
+      listenWhen: (previous, current) => previous.infoMessage != current.infoMessage && current.infoMessage != null,
+      listener: (context, state) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(state.infoMessage!),
+            backgroundColor: Colors.blueAccent,
+          ),
+        );
+        context.read<TicketBloc>().add(ClearInfoMessageEvent());
       },
+      child: BlocBuilder<TicketBloc, TicketState>(
+        builder: (context, state) {
+          if (state is TicketInitial || (state is TicketLoading && state.currentTicket == null)) {
+            return const LoadingStateWidget();
+          }
+          if (state is TicketError) {
+            return ErrorStateWidget(message: state.message);
+          }
+          
+          return _buildMainContent(context, state);
+        },
+      ),
     );
   }
 
@@ -59,7 +76,6 @@ class TicketQueueView extends StatelessWidget {
   }
 
   bool _canCallNext(TicketState state) {
-    if (state is! TicketLoaded) return false;
     if (state.currentTicket == null) return true;
     return state.currentTicket!.isCompleted || state.currentTicket!.isRegistered;
   }
