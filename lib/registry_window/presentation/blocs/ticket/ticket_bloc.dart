@@ -32,7 +32,7 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
     on<ClearInfoMessageEvent>(_onClearInfoMessage);
   }
 
-Future<void> _onCallNextTicket(
+  Future<void> _onCallNextTicket(
     CallNextTicketEvent event,
     Emitter<TicketState> emit,
   ) async {
@@ -89,9 +89,20 @@ Future<void> _onCallNextTicket(
         (failure) => emit(TicketError(message: failure.message, currentTicket: ticketToUpdate)),
         (_) {
           final updatedTicket = ticketToUpdate.copyWith(isRegistered: true);
+          final newMap = Map<TicketCategory, List<TicketEntity>>.from(state.ticketsByCategory);
+          final categoryList = newMap[updatedTicket.category];
+
+          if (categoryList != null) {
+            final ticketIndex = categoryList.indexWhere((t) => t.id == updatedTicket.id);
+            if (ticketIndex != -1) {
+              categoryList[ticketIndex] = updatedTicket;
+            }
+          }
+
           emit(TicketLoaded(
             currentTicket: updatedTicket,
-            ticketsByCategory: state.ticketsByCategory,
+            ticketsByCategory: newMap, 
+            selectedCategory: state.selectedCategory,
           ));
         },
       );
@@ -112,9 +123,20 @@ Future<void> _onCallNextTicket(
         (failure) => emit(TicketError(message: failure.message, currentTicket: ticketToUpdate)),
         (_) {
           final updatedTicket = ticketToUpdate.copyWith(isCompleted: true);
+          final newMap = Map<TicketCategory, List<TicketEntity>>.from(state.ticketsByCategory);
+          final categoryList = newMap[updatedTicket.category];
+
+          if (categoryList != null) {
+            final ticketIndex = categoryList.indexWhere((t) => t.id == updatedTicket.id);
+            if (ticketIndex != -1) {
+              categoryList[ticketIndex] = updatedTicket;
+            }
+          }
+
           emit(TicketLoaded(
             currentTicket: updatedTicket,
-            ticketsByCategory: state.ticketsByCategory,
+            ticketsByCategory: newMap, 
+            selectedCategory: state.selectedCategory,
           ));
         },
       );
@@ -128,6 +150,7 @@ Future<void> _onCallNextTicket(
     emit(TicketLoading());
     emit(const TicketLoaded(currentTicket: null));
   }
+  
   Future<void> _onLoadTicketsByCategory(
     LoadTicketsByCategoryEvent event,
     Emitter<TicketState> emit,

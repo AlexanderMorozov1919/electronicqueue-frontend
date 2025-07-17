@@ -41,17 +41,30 @@ class TicketsListSection extends StatelessWidget {
                           itemCount: tickets.length,
                           itemBuilder: (context, index) {
                             final ticket = tickets[index];
+                            
+                            String statusText;
+                            Color statusColor;
+
+                            if (ticket.isCompleted) {
+                              statusText = 'Завершен';
+                              statusColor = Colors.green;
+                            } else if (ticket.isRegistered) {
+                              statusText = 'Зарегистрирован';
+                              statusColor = Colors.blue;
+                            } else {
+                              statusText = 'В ожидании';
+                              statusColor = Colors.orange;
+                            }
+
                             return ListTile(
                               title: Text(
                                 ticket.number,
                                 style: const TextStyle(fontSize: 16),
                               ),
                               subtitle: Text(
-                                ticket.isCompleted ? 'Завершен' : 'В ожидании',
+                                statusText,
                                 style: TextStyle(
-                                  color: ticket.isCompleted
-                                      ? Colors.green
-                                      : Colors.orange,
+                                  color: statusColor,
                                 ),
                               ),
                             );
