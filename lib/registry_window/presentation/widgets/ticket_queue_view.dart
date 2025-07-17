@@ -16,7 +16,9 @@ class TicketQueueView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocListener<TicketBloc, TicketState>(
-      listenWhen: (previous, current) => previous.infoMessage != current.infoMessage && current.infoMessage != null,
+      listenWhen: (previous, current) =>
+          previous.infoMessage != current.infoMessage &&
+          current.infoMessage != null,
       listener: (context, state) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -28,22 +30,23 @@ class TicketQueueView extends StatelessWidget {
       },
       child: BlocBuilder<TicketBloc, TicketState>(
         builder: (context, state) {
-          if (state is TicketInitial || (state is TicketLoading && state.currentTicket == null)) {
-            return const LoadingStateWidget();
-          }
           if (state is TicketError) {
             return ErrorStateWidget(message: state.message);
           }
           
-          return _buildMainContent(context, state);
+          return Stack(
+            children: [
+              _buildMainContent(context),           
+              if (state is TicketInitial || (state is TicketLoading && state.currentTicket == null))
+                const LoadingStateWidget(),
+            ],
+          );
         },
       ),
     );
   }
 
-  Widget _buildMainContent(BuildContext context, TicketState state) {
-    final canCallNext = _canCallNext(state);
-    
+  Widget _buildMainContent(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -63,7 +66,7 @@ class TicketQueueView extends StatelessWidget {
                     children: [
                       const Expanded(child: TicketsListSection()),
                       const SizedBox(height: 20),
-                      NextTicketButton(enabled: canCallNext),
+                      const NextTicketButton(),
                     ],
                   ),
                 ),
@@ -73,10 +76,5 @@ class TicketQueueView extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  bool _canCallNext(TicketState state) {
-    if (state.currentTicket == null) return true;
-    return state.currentTicket!.isCompleted || state.currentTicket!.isRegistered;
   }
 }

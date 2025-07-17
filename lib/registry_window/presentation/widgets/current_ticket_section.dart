@@ -11,30 +11,24 @@ class CurrentTicketSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<TicketBloc, TicketState>(
-      builder: (context, state) {
-        if (state is! TicketLoaded) {
-          return _buildLoadingState();
-        }
-        return _buildTicketState(context, state);
+    return BlocSelector<TicketBloc, TicketState, (TicketEntity?, Type)>(
+      selector: (state) {
+        return (state.currentTicket, state.runtimeType);
+      },
+      builder: (context, data) {
+        final currentTicket = data.$1;
+        final runtimeType = data.$2;
+        final bool isAnyLoading = runtimeType == TicketLoading;
+        
+        return _buildTicketState(context, currentTicket, isAnyLoading);
       },
     );
   }
 
-  Widget _buildLoadingState() {
-    return const Card(
-      child: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Text('Загрузка...'),
-      ),
-    );
-  }
-
-  Widget _buildTicketState(BuildContext context, TicketLoaded state) {
-    final currentTicket = state.currentTicket;
-    final isTicketActive = currentTicket != null && 
-                         !currentTicket.isCompleted && 
-                         !currentTicket.isRegistered;
+  Widget _buildTicketState(BuildContext context, TicketEntity? currentTicket, bool isAnyLoading) {
+    final bool isTicketActive = currentTicket != null &&
+        !currentTicket.isCompleted &&
+        !currentTicket.isRegistered;
 
     return Card(
       child: Padding(
@@ -47,9 +41,9 @@ class CurrentTicketSection extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            if (currentTicket != null) 
-              _buildActiveTicket(context, currentTicket, isTicketActive)
-            else 
+            if (currentTicket != null)
+              _buildActiveTicket(context, currentTicket, isTicketActive, isAnyLoading)
+            else
               const Text('Нет активного талона. Нажмите "Вызвать следующего".'),
           ],
         ),
@@ -58,10 +52,7 @@ class CurrentTicketSection extends StatelessWidget {
   }
 
   Widget _buildActiveTicket(
-    BuildContext context, 
-    TicketEntity ticket, 
-    bool isActive
-  ) {
+      BuildContext context, TicketEntity ticket, bool isActive, bool isAnyLoading) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -75,24 +66,26 @@ class CurrentTicketSection extends StatelessWidget {
         ),
         Row(
           children: [
-            _buildRegisterButton(context, isActive),
+            _buildRegisterButton(context, isActive, isAnyLoading),
             const SizedBox(width: 10),
-            _buildCompleteButton(context, isActive),
+            _buildCompleteButton(context, isActive, isAnyLoading),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildRegisterButton(BuildContext context, bool isActive) {
+  Widget _buildRegisterButton(BuildContext context, bool isActive, bool isAnyLoading) {
     return ElevatedButton(
-      onPressed: isActive ? () {
-        context.read<TicketBloc>().add(RegisterCurrentTicketEvent());
-      } : null,
+      onPressed: isActive && !isAnyLoading
+          ? () {
+              context.read<TicketBloc>().add(RegisterCurrentTicketEvent());
+            }
+          : null,
       style: ElevatedButton.styleFrom(
         minimumSize: const Size(150, 50),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        textStyle: const TextStyle(fontSize: 18),
+        textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         disabledBackgroundColor: Colors.grey,
@@ -102,15 +95,17 @@ class CurrentTicketSection extends StatelessWidget {
     );
   }
 
-  Widget _buildCompleteButton(BuildContext context, bool isActive) {
+  Widget _buildCompleteButton(BuildContext context, bool isActive, bool isAnyLoading) {
     return ElevatedButton(
-      onPressed: isActive ? () {
-        context.read<TicketBloc>().add(CompleteCurrentTicketEvent());
-      } : null,
+      onPressed: isActive && !isAnyLoading
+          ? () {
+              context.read<TicketBloc>().add(CompleteCurrentTicketEvent());
+            }
+          : null,
       style: ElevatedButton.styleFrom(
         minimumSize: const Size(150, 50),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        textStyle: const TextStyle(fontSize: 18),
+        textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
         disabledBackgroundColor: Colors.grey,
