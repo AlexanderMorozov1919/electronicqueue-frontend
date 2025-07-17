@@ -81,19 +81,12 @@ class TicketRemoteDataSourceImpl implements TicketDataSource {
       'Content-Type': 'application/json',
       'X-API-KEY': AppConstants.internalApiKey,
     };
-
-    // print('>>> REQUEST to $uri');
-    // print('>>> HEADERS: $headers');
-    // print('>>> BODY: ${json.encode(requestBody)}');
     
     final response = await client.post(
       uri,
       headers: headers,
       body: json.encode(requestBody),
     );
-
-    // print('<<< RESPONSE status: ${response.statusCode}');
-    // print('<<< RESPONSE body: ${utf8.decode(response.bodyBytes)}');
 
     if (response.statusCode == 200) {
       final decodedResponse = json.decode(utf8.decode(response.bodyBytes));
