@@ -25,7 +25,8 @@ class DoctorQueueScreen extends StatelessWidget {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.exit_to_app),
+            icon: const Icon(Icons.logout),
+            color: Colors.black45,
             onPressed: () {
               context.read<AuthBloc>().add(SignOutRequested());
               Navigator.pushReplacement(

@@ -1,3 +1,4 @@
+import 'package:elqueue/registry_window/presentation/widgets/logout_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/ticket/ticket_bloc.dart';
@@ -38,6 +39,9 @@ class TicketQueuePage extends StatelessWidget {
         appBar: AppBar(
           title: const Text(AppConstants.appTitle),
           centerTitle: true,
+          actions: const [
+            LogoutButton(),
+          ],
         ),
         body: const TicketQueueView(),
       ),

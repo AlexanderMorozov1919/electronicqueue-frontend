@@ -5,8 +5,6 @@ import 'data/datasources/ticket_remote_data_source.dart';
 import 'presentation/pages/ticket_queue_page.dart';
 import 'data/repositories/ticket_repository_impl.dart';
 import 'domain/repositories/ticket_repository.dart';
-// import 'data/api/registry_api.dart'; 
-
 import 'data/repositories/auth_repository_impl.dart';
 import 'domain/repositories/auth_repository.dart';
 import 'presentation/pages/auth_page.dart';
@@ -33,25 +31,28 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Кабинет регистратуры',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          visualDensity: VisualDensity.adaptivePlatformDensity,
-        ),
-        initialRoute: '/login',
-        routes: {
-          '/login': (context) => BlocProvider(
-                create: (context) => AuthBloc(
-                  authenticateUser: AuthenticateUser(
-                    RepositoryProvider.of<AuthRepository>(context),
-                  ),
-                ),
-                child: LoginPage(),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => AuthBloc(
+              authenticateUser: AuthenticateUser(
+                RepositoryProvider.of<AuthRepository>(context),
               ),
-          '/main': (context) => const TicketQueuePage(),
-        },
+            ),
+          ),
+        ],
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Кабинет регистратуры',
+          theme: ThemeData(
+            primarySwatch: Colors.blue,
+          ),
+          initialRoute: '/login',
+          routes: {
+            '/login': (context) => LoginPage(),
+            '/main': (context) => const TicketQueuePage(),
+          },
+        ),
       ),
     );
   }
