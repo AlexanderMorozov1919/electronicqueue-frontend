@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../config/app_config.dart';
 import '../models/waiting_screen_model.dart';
 
 abstract class WaitingScreenRemoteDataSource {
@@ -21,7 +22,7 @@ class WaitingScreenRemoteDataSourceImpl implements WaitingScreenRemoteDataSource
       try {
         final request = http.Request(
           'GET',
-          Uri.parse('http://localhost:8080/api/doctor/screen-updates'),
+          Uri.parse('${AppConfig.apiBaseUrl}/api/doctor/screen-updates'),
         );
         request.headers['Accept'] = 'text/event-stream';
         request.headers['Cache-Control'] = 'no-cache';

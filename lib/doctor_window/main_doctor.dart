@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'data/datasourcers/auth_local_data_source.dart';
 import 'data/repositories/auth_repository_impl.dart';
@@ -7,7 +8,9 @@ import 'domain/usecases/sign_in.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
 import 'presentation/pages/auth_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   runApp(const MyApp());
 }
 

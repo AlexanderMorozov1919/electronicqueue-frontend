@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../config/app_config.dart';
 
 class DoctorApi {
   static const String baseUrl = 'http://localhost:8080';
@@ -19,7 +20,9 @@ class DoctorApi {
       final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
       return data.cast<Map<String, dynamic>>();
     } else {
-      throw Exception('Failed to load registered tickets: ${response.statusCode}');
+      throw Exception(
+        'Failed to load registered tickets: ${response.statusCode}',
+      );
     }
   }
 
@@ -43,7 +46,7 @@ class DoctorApi {
       throw Exception('Failed to get active ticket: ${response.statusCode}');
     }
   }
-  
+
   // Начать прием пациента
   Future<Map<String, dynamic>> startAppointment(int ticketId) async {
     final response = await http.post(
@@ -53,13 +56,15 @@ class DoctorApi {
     );
 
     if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(utf8.decode(response.bodyBytes));
+      final Map<String, dynamic> data = json.decode(
+        utf8.decode(response.bodyBytes),
+      );
       return data['ticket'] as Map<String, dynamic>;
     } else {
       throw Exception('Failed to start appointment: ${response.statusCode}');
     }
   }
-  
+
   // Завершить прием пациента
   Future<Map<String, dynamic>> completeAppointment(int ticketId) async {
     final response = await http.post(
@@ -69,7 +74,9 @@ class DoctorApi {
     );
 
     if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(utf8.decode(response.bodyBytes));
+      final Map<String, dynamic> data = json.decode(
+        utf8.decode(response.bodyBytes),
+      );
       return data['ticket'] as Map<String, dynamic>;
     } else {
       throw Exception('Failed to complete appointment: ${response.statusCode}');

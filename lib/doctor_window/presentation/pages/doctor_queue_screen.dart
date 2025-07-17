@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 
-
 import '../../data/repositories/queue_repository_impl.dart';
 import '../../domain/usecases/end_appointment.dart';
 import '../../domain/usecases/get_queue_status.dart';
@@ -30,6 +29,7 @@ class DoctorQueueScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Выйти',
+            color: Colors.black45,
             onPressed: () {
               context.read<AuthBloc>().add(SignOutRequested());
               Navigator.of(context).pushAndRemoveUntil(

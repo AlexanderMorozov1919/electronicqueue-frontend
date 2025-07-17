@@ -1,11 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../config/app_config.dart';
 import '../../domain/entities/service_entity.dart';
-import 'api_config.dart';
 
 class TicketApi {
-  final String baseUrl;
-  TicketApi({String? baseUrl}) : baseUrl = baseUrl ?? kApiBaseUrl;
+  final String baseUrl = AppConfig.apiBaseUrl;
 
   Future<Map<String, dynamic>> fetchStartPage() async {
     final response = await http.get(Uri.parse('$baseUrl/api/tickets/start'));

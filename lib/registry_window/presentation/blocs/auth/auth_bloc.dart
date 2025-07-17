@@ -11,6 +11,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   AuthBloc({required this.authenticateUser}) : super(AuthInitial()) {
     on<LoginButtonPressed>(_onLoginButtonPressed);
+    on<LogoutRequested>(_onLogoutRequested);
   }
 
   Future<void> _onLoginButtonPressed(
@@ -18,10 +19,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    final result = await authenticateUser(event.authEntity);
-    result.fold(
-      (failure) => emit(AuthError(failure.message)),
-      (success) => emit(AuthSuccess()),
-    );
+    try {
+      final result = await authenticateUser(event.authEntity);
+      result.fold(
+        (failure) => emit(AuthError(failure.message)),
+        (_) => emit(AuthSuccess()),
+      );
+    } catch (e) {
+      emit(AuthError('Произошла ошибка при авторизации'));
+    }
+  }
+
+  Future<void> _onLogoutRequested(
+    LogoutRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    
+    emit(AuthInitial()); 
   }
 }

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-
-import '../../core/constants/app_constans.dart';
+import '../../../config/app_config.dart';
 import '../../core/errors/exceptions.dart';
 import '../../core/utils/ticket_category.dart';
 import '../../domain/entities/ticket_entity.dart';
@@ -10,7 +9,7 @@ import 'ticket_data_source.dart';
 
 class TicketRemoteDataSourceImpl implements TicketDataSource {
   final http.Client client;
-  final String _baseUrl = AppConstants.apiBaseUrl;
+  final String _baseUrl = AppConfig.apiBaseUrl;
 
   TicketRemoteDataSourceImpl({required this.client});
 
@@ -79,7 +78,7 @@ class TicketRemoteDataSourceImpl implements TicketDataSource {
     final uri = Uri.parse('$_baseUrl/api/database/tickets/select');
     final headers = {
       'Content-Type': 'application/json',
-      'X-API-KEY': AppConstants.internalApiKey,
+      'X-API-KEY': AppConfig.externalApiKey,
     };
     
     final response = await client.post(

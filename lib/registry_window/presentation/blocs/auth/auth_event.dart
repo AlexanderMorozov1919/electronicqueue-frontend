@@ -17,3 +17,10 @@ class LoginButtonPressed extends AuthEvent {
   @override
   List<Object> get props => [authEntity];
 }
+
+class LogoutRequested extends AuthEvent {
+  const LogoutRequested();
+
+  @override
+  List<Object> get props => [];
+}
