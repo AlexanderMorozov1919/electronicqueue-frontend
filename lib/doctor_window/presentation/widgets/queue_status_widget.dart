@@ -100,8 +100,7 @@ class QueueStatusWidget extends StatelessWidget {
               if (queue.isAppointmentInProgress) {
                 bloc.add(EndAppointmentEvent());
               } else {
-                final nextTicket = 'A${45 + queue.queueLength}';
-                bloc.add(StartAppointmentEvent(nextTicket));
+                bloc.add(StartAppointmentEvent());
               }
             },
             child: Text(
