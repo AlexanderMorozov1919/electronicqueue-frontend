@@ -4,4 +4,6 @@ abstract class QueueDataSource {
   Future<QueueEntity> getQueueStatus();
   Future<QueueEntity> startAppointment(String ticket);
   Future<QueueEntity> endAppointment();
+
+  Stream<void> ticketUpdates();
 }

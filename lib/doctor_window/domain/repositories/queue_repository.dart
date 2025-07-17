@@ -7,4 +7,6 @@ abstract class QueueRepository {
   Future<Either<Failure, QueueEntity>> getQueueStatus();
   Future<Either<Failure, QueueEntity>> startAppointment(String ticket);
   Future<Either<Failure, QueueEntity>> endAppointment();
+  Stream<Either<Failure, void>> ticketUpdates();
+
 }
