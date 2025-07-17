@@ -5,6 +5,9 @@ import '../../domain/usecases/get_queue_status.dart';
 import '../../domain/usecases/start_appointment.dart';
 import '../../domain/usecases/watch_queue_updates.dart';
 import '../../core/errors/failures.dart';
+import '../../domain/usecases/end_break.dart';
+import '../../domain/usecases/start_break.dart';
+
 import 'queue_event.dart';
 import 'queue_state.dart';
 
@@ -15,6 +18,8 @@ class QueueBloc extends Bloc<QueueEvent, QueueState> {
   final StartAppointment startAppointment;
   final EndAppointment endAppointment;
   final WatchQueueUpdates watchQueueUpdates;
+  final StartBreak startBreak; 
+  final EndBreak endBreak; 
 
   StreamSubscription? _queueUpdatesSubscription;
 
@@ -23,11 +28,15 @@ class QueueBloc extends Bloc<QueueEvent, QueueState> {
     required this.startAppointment,
     required this.endAppointment,
     required this.watchQueueUpdates,
+    required this.startBreak, 
+    required this.endBreak,
   }) : super(QueueInitial()) {
     on<LoadQueueEvent>(_onLoadQueue);
     on<StartAppointmentEvent>(_onStartAppointment);
     on<EndAppointmentEvent>(_onEndAppointment);
     on<_QueueUpdateReceivedEvent>(_onQueueUpdateReceived);
+    on<StartBreakEvent>(_onStartBreak);
+    on<EndBreakEvent>(_onEndBreak); 
 
     _startWatchingUpdates();
   }
@@ -90,6 +99,30 @@ class QueueBloc extends Bloc<QueueEvent, QueueState> {
     result.fold(
       (failure) => emit(QueueError(message: failure.message)),
       (_) => add(LoadQueueEvent()),
+    );
+  }
+
+  Future<void> _onStartBreak(
+    StartBreakEvent event,
+    Emitter<QueueState> emit,
+  ) async {
+    emit(QueueLoading());
+    final result = await startBreak();
+    result.fold(
+      (failure) => emit(QueueError(message: 'Не удалось начать перерыв')),
+      (queue) => emit(QueueLoaded(queue: queue, infoMessage: 'Перерыв начат')),
+    );
+  }
+
+   Future<void> _onEndBreak(
+    EndBreakEvent event,
+    Emitter<QueueState> emit,
+  ) async {
+    emit(QueueLoading());
+    final result = await endBreak();
+    result.fold(
+      (failure) => emit(QueueError(message: 'Не удалось завершить перерыв')),
+      (queue) => emit(QueueLoaded(queue: queue, infoMessage: 'Перерыв завершен')),
     );
   }
 

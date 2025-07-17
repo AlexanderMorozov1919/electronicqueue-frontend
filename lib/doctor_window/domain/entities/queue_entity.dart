@@ -3,10 +3,12 @@ class QueueEntity {
   final int queueLength;
   final String? currentTicket;
   final int? activeTicketId;
+  final bool isOnBreak;
 
   const QueueEntity({
     required this.isAppointmentInProgress,
     required this.queueLength,
+    required this.isOnBreak,
     this.currentTicket,
     this.activeTicketId,
   });

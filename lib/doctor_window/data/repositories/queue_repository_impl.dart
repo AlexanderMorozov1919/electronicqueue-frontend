@@ -4,11 +4,37 @@ import '../../domain/entities/queue_entity.dart';
 import '../../domain/repositories/queue_repository.dart';
 import '../datasourcers/queue_data_source.dart';
 import '../../core/errors/exceptions.dart';
+import '../datasourcers/local_queue_data_source.dart';
+import '../datasourcers/remote_queue_data_source.dart';
 
 class QueueRepositoryImpl implements QueueRepository {
   final QueueDataSource dataSource;
 
   QueueRepositoryImpl({required this.dataSource});
+
+  @override
+  Future<Either<Failure, QueueEntity>> startBreak() async {
+    try {
+      final queue = await dataSource.startBreak();
+      return Right(queue);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message));
+    } catch (e) {
+      return Left(ServerFailure(message: 'Неизвестная ошибка при начале перерыва'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, QueueEntity>> endBreak() async {
+    try {
+      final queue = await dataSource.endBreak();
+      return Right(queue);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message));
+    } catch (e) {
+      return Left(ServerFailure(message: 'Неизвестная ошибка при завершении перерыва'));
+    }
+  }
 
   @override
   Future<Either<Failure, QueueEntity>> getQueueStatus() async {

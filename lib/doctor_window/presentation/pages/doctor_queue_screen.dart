@@ -1,3 +1,5 @@
+import 'package:elqueue/doctor_window/domain/usecases/end_break.dart';
+import 'package:elqueue/doctor_window/domain/usecases/start_break.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
@@ -15,6 +17,7 @@ import '../../data/datasourcers/remote_queue_data_source.dart';
 import '../../data/api/doctor_api.dart';
 import 'auth_page.dart';
 import '../blocs/auth/auth_event.dart';
+import '../../data/datasourcers/local_queue_data_source.dart';
 
 class DoctorQueueScreen extends StatelessWidget {
   const DoctorQueueScreen({super.key});
@@ -42,10 +45,10 @@ class DoctorQueueScreen extends StatelessWidget {
       ),
       body: BlocProvider(
         create: (context) {
-          final doctorApi = DoctorApi();
-          final queueDataSource = RemoteQueueDataSource(
-            api: doctorApi,
-            client: http.Client(),
+          //final doctorApi = DoctorApi();
+          final queueDataSource = LocalQueueDataSource(
+            //api: doctorApi,
+            //client: http.Client(),
           );
           final queueRepository = QueueRepositoryImpl(
             dataSource: queueDataSource,
@@ -56,6 +59,8 @@ class DoctorQueueScreen extends StatelessWidget {
             startAppointment: StartAppointment(queueRepository),
             endAppointment: EndAppointment(queueRepository),
             watchQueueUpdates: WatchQueueUpdates(queueRepository),
+            startBreak: StartBreak(queueRepository),
+            endBreak: EndBreak(queueRepository),
           )..add(LoadQueueEvent());
         },
         child: const Padding(
