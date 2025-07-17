@@ -16,7 +16,7 @@ class AuthRepositoryImpl implements AuthRepository {
       final doctor = await localDataSource.signIn(credentials);
       return Right(doctor);
     } catch (e) {
-      return Left(ServerFailure());
+      return Left(const ServerFailure(message: 'Неверные учетные данные'));
     }
   }
 

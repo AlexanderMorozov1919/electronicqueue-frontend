@@ -11,7 +11,19 @@ class QueueStatusWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<QueueBloc, QueueState>(
+    return BlocConsumer<QueueBloc, QueueState>(
+      listenWhen: (previous, current) =>
+          current is QueueLoaded && current.infoMessage != null,
+      listener: (context, state) {
+        if (state is QueueLoaded && state.infoMessage != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.infoMessage!),
+              backgroundColor: Colors.blueAccent,
+            ),
+          );
+        }
+      },
       builder: (context, state) {
         if (state is QueueLoading) {
           return const Center(child: CircularProgressIndicator());
@@ -20,12 +32,15 @@ class QueueStatusWidget extends StatelessWidget {
         } else if (state is QueueLoaded) {
           return _buildQueueInterface(context, state.queue);
         }
-        return const SizedBox();
+        return const Center(child: Text("Неопределенное состояние"));
       },
     );
   }
 
   Widget _buildQueueInterface(BuildContext context, QueueEntity queue) {
+    final bool canCallNext =
+        !queue.isAppointmentInProgress && queue.queueLength > 0;
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -87,9 +102,9 @@ class QueueStatusWidget extends StatelessWidget {
           width: double.infinity,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: queue.isAppointmentInProgress 
-                  ? Colors.red 
-                  : Colors.blue,
+              backgroundColor: queue.isAppointmentInProgress
+                  ? Colors.red
+                  : (canCallNext ? Colors.blue : Colors.grey),
               padding: const EdgeInsets.symmetric(vertical: 20),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -99,7 +114,7 @@ class QueueStatusWidget extends StatelessWidget {
               final bloc = context.read<QueueBloc>();
               if (queue.isAppointmentInProgress) {
                 bloc.add(EndAppointmentEvent());
-              } else {
+              } else if (canCallNext) {
                 bloc.add(StartAppointmentEvent());
               }
             },
@@ -107,10 +122,7 @@ class QueueStatusWidget extends StatelessWidget {
               queue.isAppointmentInProgress
                   ? 'Завершить прием'
                   : 'Вызвать следующего пациента',
-              style: const TextStyle(
-                fontSize: 18,
-                color: Colors.white,
-              ),
+              style: const TextStyle(fontSize: 18, color: Colors.white),
             ),
           ),
         ),

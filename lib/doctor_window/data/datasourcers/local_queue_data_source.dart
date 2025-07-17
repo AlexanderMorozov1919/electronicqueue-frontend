@@ -1,3 +1,4 @@
+import 'dart:async';
 import '../../domain/entities/queue_entity.dart';
 import '../models/queue_model.dart';
 import '../../data/datasourcers/queue_data_source.dart';
@@ -10,7 +11,7 @@ class LocalQueueDataSource implements QueueDataSource {
 
   @override
   Future<QueueEntity> getQueueStatus() async {
-    await Future.delayed(const Duration(milliseconds: 500)); // Имитация задержки сети
+    await Future.delayed(const Duration(milliseconds: 500));
     return _currentStatus;
   }
 
@@ -34,5 +35,10 @@ class LocalQueueDataSource implements QueueDataSource {
       currentTicket: _currentStatus.currentTicket,
     );
     return _currentStatus;
+  }
+
+  @override
+  Stream<void> ticketUpdates() {
+    return Stream.value(null).asBroadcastStream();
   }
 }

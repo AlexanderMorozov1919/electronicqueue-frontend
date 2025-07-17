@@ -1,13 +1,16 @@
 abstract class Failure {
   final String message;
-
-  const Failure(this.message);
+  const Failure({required this.message});
 }
 
 class ServerFailure extends Failure {
-  const ServerFailure() : super('Ошибка сервера');
+  const ServerFailure({required super.message});
 }
 
 class InvalidInputFailure extends Failure {
-  const InvalidInputFailure() : super('Некорректные данные');
+  const InvalidInputFailure() : super(message: 'Некорректные данные');
+}
+
+class EmptyQueueFailure extends Failure {
+  EmptyQueueFailure() : super(message: 'В очереди нет пациентов');
 }

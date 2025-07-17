@@ -1,123 +1,85 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../config/app_config.dart';
 
 class DoctorApi {
   static const String baseUrl = 'http://localhost:8080';
 
   // Получить список зарегистрированных талонов
   Future<List<Map<String, dynamic>>> getRegisteredTickets() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/doctor/tickets/registered'),
-        headers: {'Content-Type': 'application/json'},
-      );
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/doctor/tickets/registered'),
+      headers: {'Content-Type': 'application/json'},
+    );
 
-      if (response.statusCode == 200) {
-        // Проверяем, что response.body не null и не пустой
-        if (response.body.isEmpty || response.body == 'null') {
-          return [];
-        }
-        
-        final List<dynamic> data = json.decode(response.body);
-        return data.cast<Map<String, dynamic>>();
-      } else {
-        throw Exception('Failed to load registered tickets: ${response.statusCode}');
+    if (response.statusCode == 200) {
+      // Бэкенд может вернуть null, если список пуст
+      if (response.body.isEmpty || response.body == 'null') {
+        return [];
       }
-    } catch (e) {
-      throw Exception('Error fetching registered tickets: $e');
+      final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
+      return data.cast<Map<String, dynamic>>();
+    } else {
+      throw Exception(
+        'Failed to load registered tickets: ${response.statusCode}',
+      );
     }
   }
 
-  // Получить количество зарегистрированных талонов
-  Future<int> getRegisteredTicketsCount() async {
-    final tickets = await getRegisteredTickets();
-    return tickets.length;
+  // Получить текущий активный талон (на приеме)
+  Future<Map<String, dynamic>?> getCurrentActiveTicket() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/doctor/tickets/in-progress'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      if (response.body.isEmpty || response.body == 'null') {
+        return null;
+      }
+      final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
+      if (data.isNotEmpty) {
+        return data.first as Map<String, dynamic>;
+      }
+      return null;
+    } else {
+      throw Exception('Failed to get active ticket: ${response.statusCode}');
+    }
   }
 
   // Начать прием пациента
   Future<Map<String, dynamic>> startAppointment(int ticketId) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/doctor/start-appointment'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'ticket_id': ticketId}),
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/doctor/start-appointment'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'ticket_id': ticketId}),
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(
+        utf8.decode(response.bodyBytes),
       );
-
-      if (response.statusCode == 200) {
-        // Проверяем, что response.body не null и не пустой
-        if (response.body.isEmpty || response.body == 'null') {
-          throw Exception('Empty response from server');
-        }
-        
-        final Map<String, dynamic> data = json.decode(response.body);
-        return data['ticket'] as Map<String, dynamic>;
-      } else {
-        throw Exception('Failed to start appointment: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Error starting appointment: $e');
-    }
-  }
-
-  // Получить текущий активный талон
-  Future<Map<String, dynamic>?> getCurrentActiveTicket() async {
-    try {
-      print('DEBUG: Getting current active ticket');
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/doctor/tickets/in-progress'),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      print('DEBUG: Get active ticket response status: ${response.statusCode}');
-      print('DEBUG: Get active ticket response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        // Проверяем, что response.body не null и не пустой
-        if (response.body.isEmpty || response.body == 'null') {
-          return null;
-        }
-        
-        final List<dynamic> data = json.decode(response.body);
-        if (data.isNotEmpty) {
-          return data.first as Map<String, dynamic>;
-        }
-        return null;
-      } else {
-        throw Exception('Failed to get active ticket: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('DEBUG: Error getting active ticket: $e');
-      throw Exception('Error getting active ticket: $e');
+      return data['ticket'] as Map<String, dynamic>;
+    } else {
+      throw Exception('Failed to start appointment: ${response.statusCode}');
     }
   }
 
   // Завершить прием пациента
   Future<Map<String, dynamic>> completeAppointment(int ticketId) async {
-    try {
-      print('DEBUG: Completing appointment for ticket ID: $ticketId');
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/doctor/complete-appointment'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'ticket_id': ticketId}),
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/doctor/complete-appointment'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'ticket_id': ticketId}),
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(
+        utf8.decode(response.bodyBytes),
       );
-
-      print('DEBUG: Complete appointment response status: ${response.statusCode}');
-      print('DEBUG: Complete appointment response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        // Проверяем, что response.body не null и не пустой
-        if (response.body.isEmpty || response.body == 'null') {
-          throw Exception('Empty response from server');
-        }
-        
-        final Map<String, dynamic> data = json.decode(response.body);
-        return data['ticket'] as Map<String, dynamic>;
-      } else {
-        throw Exception('Failed to complete appointment: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('DEBUG: Error completing appointment: $e');
-      throw Exception('Error completing appointment: $e');
+      return data['ticket'] as Map<String, dynamic>;
+    } else {
+      throw Exception('Failed to complete appointment: ${response.statusCode}');
     }
   }
-} 
+}
