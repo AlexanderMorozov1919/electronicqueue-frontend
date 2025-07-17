@@ -39,7 +39,7 @@ class QueueBloc extends Bloc<QueueEvent, QueueState> {
     Emitter<QueueState> emit,
   ) async {
     emit(QueueLoading());
-    final result = await startAppointment(event.ticket);
+    final result = await startAppointment();
     result.fold(
       (failure) => emit(QueueError(message: _mapFailureToMessage(failure))),
       (queue) => emit(QueueLoaded(queue: queue)),

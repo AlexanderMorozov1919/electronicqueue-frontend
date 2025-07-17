@@ -9,7 +9,8 @@ import '../blocs/queue_bloc.dart';
 import '../blocs/queue_event.dart';
 import '../widgets/queue_status_widget.dart';
 import '../blocs/auth/auth_bloc.dart';
-import '../../data/datasourcers/local_queue_data_source.dart';
+import '../../data/datasourcers/remote_queue_data_source.dart';
+import '../../data/api/doctor_api.dart';
 import 'auth_page.dart';
 import '../blocs/auth/auth_event.dart';
 
@@ -39,17 +40,17 @@ class DoctorQueueScreen extends StatelessWidget {
         create: (context) => QueueBloc(
           getQueueStatus: GetQueueStatus(
             QueueRepositoryImpl(
-              dataSource: LocalQueueDataSource(),
+              dataSource: RemoteQueueDataSource(DoctorApi()),
             ),
           ),
           startAppointment: StartAppointment(
             QueueRepositoryImpl(
-              dataSource: LocalQueueDataSource(),
+              dataSource: RemoteQueueDataSource(DoctorApi()),
             ),
           ),
           endAppointment: EndAppointment(
             QueueRepositoryImpl(
-              dataSource: LocalQueueDataSource(),
+              dataSource: RemoteQueueDataSource(DoctorApi()),
             ),
           ),
         )..add(LoadQueueEvent()),
