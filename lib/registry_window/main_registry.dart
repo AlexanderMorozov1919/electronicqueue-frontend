@@ -15,7 +15,7 @@ import 'domain/usecases/authenticate_user.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
-  
+
   runApp(const MyApp());
 }
 
@@ -27,7 +27,7 @@ class MyApp extends StatelessWidget {
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider<AuthRepository>(
-          create: (context) => AuthRepositoryImpl(),
+          create: (context) => AuthRepositoryImpl(client: http.Client()),
         ),
         RepositoryProvider<TicketRepository>(
           create: (context) => TicketRepositoryImpl(
@@ -42,15 +42,14 @@ class MyApp extends StatelessWidget {
               authenticateUser: AuthenticateUser(
                 RepositoryProvider.of<AuthRepository>(context),
               ),
+              authRepository: RepositoryProvider.of<AuthRepository>(context),
             ),
           ),
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Кабинет регистратуры',
-          theme: ThemeData(
-            primarySwatch: Colors.blue,
-          ),
+          theme: ThemeData(primarySwatch: Colors.blue),
           initialRoute: '/login',
           routes: {
             '/login': (context) => LoginPage(),
