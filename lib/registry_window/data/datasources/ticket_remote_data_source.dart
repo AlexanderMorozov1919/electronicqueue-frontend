@@ -6,18 +6,31 @@ import '../../core/utils/ticket_category.dart';
 import '../../domain/entities/ticket_entity.dart';
 import '../models/ticket_model.dart';
 import 'ticket_data_source.dart';
+import '../services/auth_token_service.dart';
 
 class TicketRemoteDataSourceImpl implements TicketDataSource {
   final http.Client client;
   final String _baseUrl = AppConfig.apiBaseUrl;
+  final AuthTokenService _tokenService = AuthTokenService();
 
   TicketRemoteDataSourceImpl({required this.client});
+
+  Map<String, String> _getAuthHeaders() {
+    final token = _tokenService.token;
+    if (token == null) {
+      throw ServerException('Пользователь не авторизован');
+    }
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+  }
 
   @override
   Future<TicketEntity> callNextTicket(int windowNumber) async {
     final response = await client.post(
       Uri.parse('$_baseUrl/api/registrar/call-next'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _getAuthHeaders(),
       body: json.encode({'window_number': windowNumber}),
     );
 
@@ -28,7 +41,9 @@ class TicketRemoteDataSourceImpl implements TicketDataSource {
       throw ServerException('Очередь пуста');
     } else {
       final errorBody = json.decode(utf8.decode(response.bodyBytes));
-      throw ServerException(errorBody['error'] ?? 'Ошибка вызова следующего талона');
+      throw ServerException(
+        errorBody['error'] ?? 'Ошибка вызова следующего талона',
+      );
     }
   }
 
@@ -36,18 +51,22 @@ class TicketRemoteDataSourceImpl implements TicketDataSource {
   Future<void> updateTicketStatus(String ticketId, String status) async {
     final response = await client.patch(
       Uri.parse('$_baseUrl/api/registrar/tickets/$ticketId/status'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _getAuthHeaders(),
       body: json.encode({'status': status}),
     );
 
     if (response.statusCode != 200) {
       final errorBody = json.decode(utf8.decode(response.bodyBytes));
-      throw ServerException(errorBody['error'] ?? 'Ошибка обновления статуса талона');
+      throw ServerException(
+        errorBody['error'] ?? 'Ошибка обновления статуса талона',
+      );
     }
   }
 
   @override
-  Future<List<TicketEntity>> getTicketsByCategory(TicketCategory category) async {
+  Future<List<TicketEntity>> getTicketsByCategory(
+    TicketCategory category,
+  ) async {
     String letterPrefix;
     switch (category) {
       case TicketCategory.byAppointment:
@@ -70,9 +89,9 @@ class TicketRemoteDataSourceImpl implements TicketDataSource {
       "filters": {
         "logical_operator": "AND",
         "conditions": [
-          {"field": "ticket_number", "operator": "LIKE", "value": letterPrefix}
-        ]
-      }
+          {"field": "ticket_number", "operator": "LIKE", "value": letterPrefix},
+        ],
+      },
     };
 
     final uri = Uri.parse('$_baseUrl/api/database/tickets/select');
@@ -80,7 +99,7 @@ class TicketRemoteDataSourceImpl implements TicketDataSource {
       'Content-Type': 'application/json',
       'X-API-KEY': AppConfig.externalApiKey,
     };
-    
+
     final response = await client.post(
       uri,
       headers: headers,
@@ -91,14 +110,15 @@ class TicketRemoteDataSourceImpl implements TicketDataSource {
       final decodedResponse = json.decode(utf8.decode(response.bodyBytes));
 
       if (decodedResponse is! Map || !decodedResponse.containsKey('data')) {
-          throw ServerException("Ответ от сервера не содержит ключ 'data'");
+        throw ServerException("Ответ от сервера не содержит ключ 'data'");
       }
-      
+
       final List<dynamic> ticketData = decodedResponse['data'] ?? [];
       return ticketData.map((json) => TicketModel.fromJson(json)).toList();
     } else {
       throw ServerException(
-          'Не удалось загрузить талоны. Статус: ${response.statusCode}, Тело: ${utf8.decode(response.bodyBytes)}');
+        'Не удалось загрузить талоны. Статус: ${response.statusCode}, Тело: ${utf8.decode(response.bodyBytes)}',
+      );
     }
   }
 
