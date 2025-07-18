@@ -17,7 +17,6 @@ import '../../data/datasourcers/remote_queue_data_source.dart';
 import '../../data/api/doctor_api.dart';
 import 'auth_page.dart';
 import '../blocs/auth/auth_event.dart';
-import '../../data/datasourcers/local_queue_data_source.dart';
 
 class DoctorQueueScreen extends StatelessWidget {
   const DoctorQueueScreen({super.key});
@@ -45,10 +44,10 @@ class DoctorQueueScreen extends StatelessWidget {
       ),
       body: BlocProvider(
         create: (context) {
-          //final doctorApi = DoctorApi();
-          final queueDataSource = LocalQueueDataSource(
-            //api: doctorApi,
-            //client: http.Client(),
+          final doctorApi = DoctorApi();
+          final queueDataSource = RemoteQueueDataSource(
+            api: doctorApi,
+            client: http.Client(),
           );
           final queueRepository = QueueRepositoryImpl(
             dataSource: queueDataSource,

@@ -40,14 +40,10 @@ class LocalQueueDataSource implements QueueDataSource {
     return _currentStatus;
   }
 
-  // @override
-  // Stream<void> ticketUpdates() {
-  //    return Stream.value(null).asBroadcastStream();
-  //  }
   @override
   Stream<void> ticketUpdates() {
-    return Stream.empty(); // Для локального тестирования
-  }
+     return Stream.value(null).asBroadcastStream();
+   }
 
   @override
   Future<QueueEntity> startBreak() async {
