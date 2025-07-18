@@ -1,3 +1,5 @@
+import 'package:elqueue/doctor_window/domain/usecases/end_break.dart';
+import 'package:elqueue/doctor_window/domain/usecases/start_break.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
@@ -56,6 +58,8 @@ class DoctorQueueScreen extends StatelessWidget {
             startAppointment: StartAppointment(queueRepository),
             endAppointment: EndAppointment(queueRepository),
             watchQueueUpdates: WatchQueueUpdates(queueRepository),
+            startBreak: StartBreak(queueRepository),
+            endBreak: EndBreak(queueRepository),
           )..add(LoadQueueEvent());
         },
         child: const Padding(

@@ -22,6 +22,7 @@ class RemoteQueueDataSource implements QueueDataSource {
     if (activeTicket != null) {
       return QueueModel(
         isAppointmentInProgress: true,
+        isOnBreak: false,
         queueLength: 0,
         currentTicket: activeTicket['ticket_number'] as String?,
         activeTicketId: activeTicket['id'] as int?,
@@ -30,6 +31,7 @@ class RemoteQueueDataSource implements QueueDataSource {
       final registeredTickets = await api.getRegisteredTickets();
       return QueueModel(
         isAppointmentInProgress: false,
+        isOnBreak: false,
         queueLength: registeredTickets.length,
         currentTicket: null,
         activeTicketId: null,
@@ -52,6 +54,7 @@ class RemoteQueueDataSource implements QueueDataSource {
 
     return QueueModel(
       isAppointmentInProgress: true,
+      isOnBreak: false,
       queueLength: tickets.length - 1,
       currentTicket: result['ticket_number'] as String?,
       activeTicketId: result['id'] as int?,
@@ -71,10 +74,33 @@ class RemoteQueueDataSource implements QueueDataSource {
     final registeredTickets = await api.getRegisteredTickets();
     return QueueModel(
       isAppointmentInProgress: false,
+      isOnBreak: false,
       queueLength: registeredTickets.length,
       currentTicket: null,
       activeTicketId: null,
     );
+  }
+
+  @override
+  Future<QueueEntity> startBreak() async {
+    return QueueModel(
+    isAppointmentInProgress: false,
+    isOnBreak: true,
+    queueLength: 0,
+    currentTicket: null,
+    activeTicketId: null,
+  );
+  }
+
+  @override
+  Future<QueueEntity> endBreak() async {
+    return QueueModel(
+    isAppointmentInProgress: false,
+    isOnBreak: false,
+    queueLength: 0,
+    currentTicket: null,
+    activeTicketId: null,
+  );
   }
 
   @override

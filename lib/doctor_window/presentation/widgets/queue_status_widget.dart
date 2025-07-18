@@ -38,8 +38,11 @@ class QueueStatusWidget extends StatelessWidget {
   }
 
   Widget _buildQueueInterface(BuildContext context, QueueEntity queue) {
-    final bool canCallNext =
-        !queue.isAppointmentInProgress && queue.queueLength > 0;
+    final bool canCallNext = !queue.isAppointmentInProgress && 
+                           !queue.isOnBreak && 
+                           queue.queueLength > 0;
+    final bool canStartBreak = !queue.isAppointmentInProgress && !queue.isOnBreak;
+    final bool canEndBreak = queue.isOnBreak;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -75,29 +78,85 @@ class QueueStatusWidget extends StatelessWidget {
                       ),
                     ],
                   )
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Очередь',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                : queue.isOnBreak
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'Перерыв',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Icon(
+                            Icons.coffee,
+                            size: 64,
+                            color: Colors.orange,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            '${queue.queueLength} талонов в очереди',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'Очередь',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            '${queue.queueLength} талонов',
+                            style: const TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        '${queue.queueLength} талонов',
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black54,
-                        ),
-                      ),
-                    ],
-                  ),
           ),
         ),
+        if (canStartBreak || canEndBreak)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: canEndBreak ? Colors.green : Colors.orange,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  final bloc = context.read<QueueBloc>();
+                  if (canEndBreak) {
+                    bloc.add(EndBreakEvent());
+                  } else {
+                    bloc.add(StartBreakEvent());
+                  }
+                },
+                child: Text(
+                  canEndBreak ? 'Завершить перерыв' : 'Начать перерыв',
+                  style: const TextStyle(fontSize: 18, color: Colors.white),
+                ),
+              ),
+            ),
+          ),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
@@ -105,19 +164,21 @@ class QueueStatusWidget extends StatelessWidget {
               backgroundColor: queue.isAppointmentInProgress
                   ? Colors.red
                   : (canCallNext ? Colors.blue : Colors.grey),
-              padding: const EdgeInsets.symmetric(vertical: 20),
+              padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            onPressed: () {
-              final bloc = context.read<QueueBloc>();
-              if (queue.isAppointmentInProgress) {
-                bloc.add(EndAppointmentEvent());
-              } else if (canCallNext) {
-                bloc.add(StartAppointmentEvent());
-              }
-            },
+            onPressed: queue.isAppointmentInProgress || canCallNext
+                ? () {
+                    final bloc = context.read<QueueBloc>();
+                    if (queue.isAppointmentInProgress) {
+                      bloc.add(EndAppointmentEvent());
+                    } else {
+                      bloc.add(StartAppointmentEvent());
+                    }
+                  }
+                : null,
             child: Text(
               queue.isAppointmentInProgress
                   ? 'Завершить прием'
