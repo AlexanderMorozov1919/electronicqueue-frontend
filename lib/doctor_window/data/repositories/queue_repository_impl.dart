@@ -4,8 +4,6 @@ import '../../domain/entities/queue_entity.dart';
 import '../../domain/repositories/queue_repository.dart';
 import '../datasourcers/queue_data_source.dart';
 import '../../core/errors/exceptions.dart';
-import '../datasourcers/local_queue_data_source.dart';
-import '../datasourcers/remote_queue_data_source.dart';
 
 class QueueRepositoryImpl implements QueueRepository {
   final QueueDataSource dataSource;

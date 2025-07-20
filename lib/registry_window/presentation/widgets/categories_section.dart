@@ -30,7 +30,7 @@ class CategoriesSection extends StatelessWidget {
                   },
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
