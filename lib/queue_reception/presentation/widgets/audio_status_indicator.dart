@@ -8,7 +8,7 @@ class AudioStatusIndicator extends StatefulWidget {
 }
 
 class _AudioStatusIndicatorState extends State<AudioStatusIndicator> {
-  bool _isAudioEnabled = false;
+  final bool _isAudioEnabled = false;
 
   @override
   Widget build(BuildContext context) {

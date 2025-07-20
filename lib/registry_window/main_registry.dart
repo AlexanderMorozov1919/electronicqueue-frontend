@@ -1,3 +1,10 @@
+import 'package:elqueue/registry_window/data/datasources/appointment_remote_data_source.dart';
+import 'package:elqueue/registry_window/data/datasources/patient_remote_data_source.dart';
+import 'package:elqueue/registry_window/domain/repositories/appointment_repository_impl.dart';
+import 'package:elqueue/registry_window/data/repositories/patient_repository_impl.dart';
+import 'package:elqueue/registry_window/domain/repositories/appointment_repository.dart';
+import 'package:elqueue/registry_window/domain/repositories/patient_repository.dart';
+import 'package:elqueue/registry_window/presentation/blocs/appointment/appointment_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -15,7 +22,6 @@ import 'domain/usecases/authenticate_user.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
-
   runApp(const MyApp());
 }
 
@@ -24,14 +30,25 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final httpClient = http.Client();
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider<AuthRepository>(
-          create: (context) => AuthRepositoryImpl(client: http.Client()),
+          create: (context) => AuthRepositoryImpl(client: httpClient),
         ),
         RepositoryProvider<TicketRepository>(
           create: (context) => TicketRepositoryImpl(
-            remoteDataSource: TicketRemoteDataSourceImpl(client: http.Client()),
+            remoteDataSource: TicketRemoteDataSourceImpl(client: httpClient),
+          ),
+        ),
+        RepositoryProvider<AppointmentRepository>(
+          create: (context) => AppointmentRepositoryImpl(
+            remoteDataSource: AppointmentRemoteDataSourceImpl(client: httpClient),
+          ),
+        ),
+        RepositoryProvider<PatientRepository>(
+          create: (context) => PatientRepositoryImpl(
+            remoteDataSource: PatientRemoteDataSourceImpl(client: httpClient),
           ),
         ),
       ],
@@ -39,10 +56,14 @@ class MyApp extends StatelessWidget {
         providers: [
           BlocProvider(
             create: (context) => AuthBloc(
-              authenticateUser: AuthenticateUser(
-                RepositoryProvider.of<AuthRepository>(context),
-              ),
-              authRepository: RepositoryProvider.of<AuthRepository>(context),
+              authenticateUser: AuthenticateUser(context.read<AuthRepository>()),
+              authRepository: context.read<AuthRepository>(),
+            ),
+          ),
+          BlocProvider(
+            create: (context) => AppointmentBloc(
+              appointmentRepository: context.read<AppointmentRepository>(),
+              patientRepository: context.read<PatientRepository>(),
             ),
           ),
         ],

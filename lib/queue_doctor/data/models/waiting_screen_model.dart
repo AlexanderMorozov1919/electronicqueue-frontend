@@ -2,18 +2,12 @@ import '../../domain/entities/waiting_screen_entity.dart';
 
 class WaitingScreenModel extends WaitingScreenEntity {
   const WaitingScreenModel({
-    required String doctorName,
-    required String doctorSpecialty,
-    required int officeNumber,
-    String? currentTicket,
-    required bool isCalled,
-  }) : super(
-          doctorName: doctorName,
-          doctorSpecialty: doctorSpecialty,
-          officeNumber: officeNumber,
-          currentTicket: currentTicket,
-          isCalled: isCalled,
-        );
+    required super.doctorName,
+    required super.doctorSpecialty,
+    required super.officeNumber,
+    super.currentTicket,
+    required super.isCalled,
+  });
 
   factory WaitingScreenModel.fromJson(Map<String, dynamic> json) {
     final bool isWaiting = json['is_waiting'] ?? true;

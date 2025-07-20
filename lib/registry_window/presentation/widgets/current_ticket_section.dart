@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/constants/app_constans.dart';
+import '../blocs/appointment/appointment_bloc.dart';
 import '../blocs/ticket/ticket_state.dart';
 import '../blocs/ticket/ticket_event.dart';
 import '../blocs/ticket/ticket_bloc.dart';
 import '../../domain/entities/ticket_entity.dart';
+import 'appointment_dialog.dart';
 
 class CurrentTicketSection extends StatelessWidget {
   const CurrentTicketSection({super.key});
@@ -19,7 +21,6 @@ class CurrentTicketSection extends StatelessWidget {
         final currentTicket = data.$1;
         final runtimeType = data.$2;
         final bool isAnyLoading = runtimeType == TicketLoading;
-        
         return _buildTicketState(context, currentTicket, isAnyLoading);
       },
     );
@@ -66,7 +67,7 @@ class CurrentTicketSection extends StatelessWidget {
         ),
         Row(
           children: [
-            _buildRegisterButton(context, isActive, isAnyLoading),
+            _buildRegisterButton(context, ticket, isActive, isAnyLoading),
             const SizedBox(width: 10),
             _buildCompleteButton(context, isActive, isAnyLoading),
           ],
@@ -75,11 +76,28 @@ class CurrentTicketSection extends StatelessWidget {
     );
   }
 
-  Widget _buildRegisterButton(BuildContext context, bool isActive, bool isAnyLoading) {
+  Widget _buildRegisterButton(BuildContext context, TicketEntity ticket, bool isActive, bool isAnyLoading) {
     return ElevatedButton(
       onPressed: isActive && !isAnyLoading
           ? () {
-              context.read<TicketBloc>().add(RegisterCurrentTicketEvent());
+              showDialog<bool>(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) => MultiBlocProvider(
+                  providers: [
+                     BlocProvider.value(value: context.read<AppointmentBloc>()),
+                     BlocProvider.value(value: context.read<TicketBloc>()),
+                  ],
+                  child: AppointmentDialog(ticketId: ticket.id),
+                ),
+              ).then((isSuccess) {
+                if (isSuccess == true) {
+                  context.read<TicketBloc>().add(RegisterCurrentTicketEvent());
+                   ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Пациент успешно записан!'), backgroundColor: Colors.green),
+                  );
+                }
+              });
             }
           : null,
       style: ElevatedButton.styleFrom(

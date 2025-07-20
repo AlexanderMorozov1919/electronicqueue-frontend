@@ -34,6 +34,8 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_dotenv: ^5.1.0 
+  mask_text_input_formatter: ^2.9.0
+  # flutter_typeahead: ^5.2.0
   http: ^1.4.0
   intl: ^0.18.1
   dartz: ^0.10.1
