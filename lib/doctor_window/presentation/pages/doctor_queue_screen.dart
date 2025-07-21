@@ -13,6 +13,7 @@ import '../blocs/queue_bloc.dart';
 import '../blocs/queue_event.dart';
 import '../widgets/queue_status_widget.dart';
 import '../blocs/auth/auth_bloc.dart';
+import '../blocs/auth/auth_state.dart';
 import '../../data/datasourcers/remote_queue_data_source.dart';
 import '../../data/api/doctor_api.dart';
 import 'auth_page.dart';
@@ -25,7 +26,26 @@ class DoctorQueueScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Кабинет врача'),
+        title: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            if (state is AuthSuccess) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Text('Кабинет врача'),
+                  Text(
+                    state.doctor.name, // Используем поле name из Doctor
+                    style: const TextStyle(
+                      fontSize: 25,
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ),
+                ],
+              );
+            }
+            return const Text('Кабинет врача');
+          },
+        ),
         centerTitle: true,
         actions: [
           IconButton(
