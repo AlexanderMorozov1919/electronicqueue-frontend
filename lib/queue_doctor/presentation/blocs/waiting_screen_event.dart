@@ -7,6 +7,22 @@ abstract class WaitingScreenEvent extends Equatable {
   List<Object> get props => [];
 }
 
-class LoadWaitingScreen extends WaitingScreenEvent {}
+class InitializeCabinetSelection extends WaitingScreenEvent {}
 
-class ToggleCallPatient extends WaitingScreenEvent {} 
+class FilterCabinets extends WaitingScreenEvent {
+  final String query;
+
+  const FilterCabinets({required this.query});
+
+  @override
+  List<Object> get props => [query];
+}
+
+class LoadWaitingScreen extends WaitingScreenEvent {
+  final int cabinetNumber;
+
+  const LoadWaitingScreen({required this.cabinetNumber});
+
+  @override
+  List<Object> get props => [cabinetNumber];
+}
