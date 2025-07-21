@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-
-import 'data/datasourcers/auth_local_data_source.dart';
+import 'data/datasourcers/auth_remote_data_source.dart';
 import 'data/repositories/auth_repository_impl.dart';
 import 'domain/usecases/sign_in.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
@@ -25,11 +24,11 @@ class MyApp extends StatelessWidget {
           create: (context) => AuthBloc(
             signIn: SignIn(
               AuthRepositoryImpl(
-                localDataSource: AuthLocalDataSource(),
+                remoteDataSource: AuthRemoteDataSource(),
               ),
             ),
             authRepository: AuthRepositoryImpl(
-              localDataSource: AuthLocalDataSource(),
+              remoteDataSource: AuthRemoteDataSource(),
             ),
           ),
         ),
