@@ -1,15 +1,26 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-// import '../../../config/app_config.dart';
+import '../../../config/app_config.dart';
+import '../services/auth_service.dart';
 
 class DoctorApi {
-  static const String baseUrl = 'http://localhost:8080';
+  static final String baseUrl = AppConfig.apiBaseUrl;
+  final AuthService _authService = AuthService();
+
+  Map<String, String> _getHeaders() {
+    final token = _authService.token;
+    if (token == null) throw Exception('Токен не найден. Авторизуйтесь.');
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+  }
 
   // Получить список зарегистрированных талонов
   Future<List<Map<String, dynamic>>> getRegisteredTickets() async {
     final response = await http.get(
       Uri.parse('$baseUrl/api/doctor/tickets/registered'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -30,7 +41,7 @@ class DoctorApi {
   Future<Map<String, dynamic>?> getCurrentActiveTicket() async {
     final response = await http.get(
       Uri.parse('$baseUrl/api/doctor/tickets/in-progress'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -51,7 +62,7 @@ class DoctorApi {
   Future<Map<String, dynamic>> startAppointment(int ticketId) async {
     final response = await http.post(
       Uri.parse('$baseUrl/api/doctor/start-appointment'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _getHeaders(),
       body: json.encode({'ticket_id': ticketId}),
     );
 
@@ -69,7 +80,7 @@ class DoctorApi {
   Future<Map<String, dynamic>> completeAppointment(int ticketId) async {
     final response = await http.post(
       Uri.parse('$baseUrl/api/doctor/complete-appointment'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _getHeaders(),
       body: json.encode({'ticket_id': ticketId}),
     );
 
