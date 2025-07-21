@@ -5,7 +5,7 @@ abstract class QueueState extends Equatable {
   const QueueState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class QueueInitial extends QueueState {}
@@ -14,11 +14,12 @@ class QueueLoading extends QueueState {}
 
 class QueueLoaded extends QueueState {
   final QueueEntity queue;
+  final String? infoMessage;
 
-  const QueueLoaded({required this.queue});
+  const QueueLoaded({required this.queue, this.infoMessage});
 
   @override
-  List<Object> get props => [queue];
+  List<Object?> get props => [queue, infoMessage];
 }
 
 class QueueError extends QueueState {

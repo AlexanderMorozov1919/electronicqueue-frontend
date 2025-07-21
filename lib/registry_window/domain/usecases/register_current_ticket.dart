@@ -1,12 +1,13 @@
+import 'package:dartz/dartz.dart';
+import '../../core/errors/failures.dart';
 import '../repositories/ticket_repository.dart';
-import '../entities/ticket_entity.dart';
 
 class RegisterCurrentTicket {
   final TicketRepository repository;
 
   RegisterCurrentTicket(this.repository);
-
-  Future<TicketEntity> call() async {
-    return await repository.registerCurrentTicket();
+  
+  Future<Either<Failure, void>> call(String ticketId) async {
+    return await repository.registerCurrentTicket(ticketId);
   }
 }

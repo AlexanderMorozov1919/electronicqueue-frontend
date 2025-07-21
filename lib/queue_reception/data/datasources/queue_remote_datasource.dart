@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../config/app_config.dart';
 import '../../domain/entities/ticket.dart';
 
 class SseQueueRemoteDataSource {
@@ -17,11 +18,11 @@ class SseQueueRemoteDataSource {
         _isInitialFetchDone = true;
       }
 
-      print("SSE: Connecting to http://localhost:8080/tickets");
+      print("SSE: Connecting to ${AppConfig.apiBaseUrl}/tickets");
       try {
         final request = http.Request(
           'GET',
-          Uri.parse('http://localhost:8080/tickets'),
+          Uri.parse('${AppConfig.apiBaseUrl}/tickets'),
         );
         request.headers['Accept'] = 'text/event-stream';
         request.headers['Cache-Control'] = 'no-cache';
@@ -86,7 +87,7 @@ class SseQueueRemoteDataSource {
     try {
       print("HTTP: Fetching initial active tickets...");
       final response = await http.get(
-        Uri.parse('http://localhost:8080/api/tickets/active'),
+        Uri.parse('${AppConfig.apiBaseUrl}/api/tickets/active'),
       );
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));

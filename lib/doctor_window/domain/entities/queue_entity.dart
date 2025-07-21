@@ -2,11 +2,15 @@ class QueueEntity {
   final bool isAppointmentInProgress;
   final int queueLength;
   final String? currentTicket;
+  final int? activeTicketId;
+  final bool isOnBreak;
 
   const QueueEntity({
     required this.isAppointmentInProgress,
     required this.queueLength,
+    required this.isOnBreak,
     this.currentTicket,
+    this.activeTicketId,
   });
 
   @override
@@ -16,6 +20,7 @@ class QueueEntity {
     return other is QueueEntity &&
         other.isAppointmentInProgress == isAppointmentInProgress &&
         other.queueLength == queueLength &&
+        other.activeTicketId == activeTicketId &&
         other.currentTicket == currentTicket;
   }
 
@@ -23,5 +28,6 @@ class QueueEntity {
   int get hashCode =>
       isAppointmentInProgress.hashCode ^
       queueLength.hashCode ^
+      activeTicketId.hashCode ^
       currentTicket.hashCode;
 }

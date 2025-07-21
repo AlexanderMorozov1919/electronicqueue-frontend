@@ -9,13 +9,10 @@ abstract class QueueEvent extends Equatable {
 
 class LoadQueueEvent extends QueueEvent {}
 
-class StartAppointmentEvent extends QueueEvent {
-  final String ticket;
-
-  const StartAppointmentEvent(this.ticket);
-
-  @override
-  List<Object> get props => [ticket];
-}
+class StartAppointmentEvent extends QueueEvent {}
 
 class EndAppointmentEvent extends QueueEvent {}
+
+class StartBreakEvent extends QueueEvent {}
+
+class EndBreakEvent extends QueueEvent {}

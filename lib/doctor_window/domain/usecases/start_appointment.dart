@@ -9,10 +9,7 @@ class StartAppointment {
 
   StartAppointment(this.repository);
 
-  Future<Either<Failure, QueueEntity>> call(String ticket) async {
-    if (ticket.isEmpty) {
-      return Left(InvalidInputFailure());
-    }
-    return await repository.startAppointment(ticket);
+  Future<Either<Failure, QueueEntity>> call() async {
+    return await repository.startAppointment('');
   }
 }

@@ -1,11 +1,13 @@
+import 'package:dartz/dartz.dart';
+import '../../core/errors/failures.dart';
 import '../entities/ticket_entity.dart';
 import '../../core/utils/ticket_category.dart';
 
 abstract class TicketRepository {
-  Future<List<TicketEntity>> getTickets();
-  Future<TicketEntity?> getCurrentTicket();
-  Future<TicketEntity> callNextTicket();
-  Future<TicketEntity> registerCurrentTicket();
-  Future<TicketEntity> completeCurrentTicket();
-  Future<List<TicketEntity>> getTicketsByCategory(TicketCategory category);
+  Future<Either<Failure, List<TicketEntity>>> getTickets();
+  Future<Either<Failure, List<TicketEntity>>> getTicketsByCategory(TicketCategory category);
+  Future<Either<Failure, TicketEntity?>> getCurrentTicket();
+  Future<Either<Failure, TicketEntity>> callNextTicket(int windowNumber);
+  Future<Either<Failure, void>> registerCurrentTicket(String ticketId);
+  Future<Either<Failure, void>> completeCurrentTicket(String ticketId);
 }
