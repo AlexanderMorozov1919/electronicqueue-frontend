@@ -4,13 +4,13 @@ import '../entities/waiting_screen_entity.dart';
 import '../repositories/waiting_screen_repository.dart';
 
 class GetWaitingScreenData
-    implements UseCase<WaitingScreenEntity, GetWaitingScreenDataParams> {
+    implements UseCase<DoctorQueueEntity, GetWaitingScreenDataParams> {
   final WaitingScreenRepository repository;
 
   GetWaitingScreenData(this.repository);
 
   @override
-  Stream<WaitingScreenEntity> call(GetWaitingScreenDataParams params) {
+  Stream<DoctorQueueEntity> call(GetWaitingScreenDataParams params) {
     return repository.getWaitingScreenData(params);
   }
 }

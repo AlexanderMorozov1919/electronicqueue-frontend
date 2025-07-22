@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../domain/entities/waiting_screen_entity.dart';
 
 abstract class WaitingScreenState extends Equatable {
   const WaitingScreenState();
@@ -11,6 +12,7 @@ class WaitingScreenInitial extends WaitingScreenState {}
 
 class WaitingScreenLoading extends WaitingScreenState {}
 
+// Состояние для выбора кабинета
 class CabinetSelection extends WaitingScreenState {
   final List<int> allCabinets;
   final List<int> filteredCabinets;
@@ -34,49 +36,18 @@ class CabinetSelection extends WaitingScreenState {
   }
 }
 
-// Новое состояние для отображения сообщения "Нет приема"
-class WaitingScreenNoReception extends WaitingScreenState {
-  final String message;
+// Состояние, когда данные об очереди загружены
+class DoctorQueueLoaded extends WaitingScreenState {
+  final DoctorQueueEntity queueEntity;
 
-  const WaitingScreenNoReception({required this.message});
-
-  @override
-  List<Object> get props => [message];
-}
-
-class WaitingScreenWaiting extends WaitingScreenState {
-  final String doctorName;
-  final String doctorSpecialty;
-  final int cabinetNumber;
-
-  const WaitingScreenWaiting({
-    required this.doctorName,
-    required this.doctorSpecialty,
-    required this.cabinetNumber,
-  });
+  const DoctorQueueLoaded({required this.queueEntity});
 
   @override
-  List<Object> get props => [doctorName, doctorSpecialty, cabinetNumber];
+  List<Object> get props => [queueEntity];
 }
 
-class WaitingScreenCalled extends WaitingScreenState {
-  final String doctorName;
-  final String doctorSpecialty;
-  final int cabinetNumber;
-  final String ticketNumber;
 
-  const WaitingScreenCalled({
-    required this.doctorName,
-    required this.doctorSpecialty,
-    required this.cabinetNumber,
-    required this.ticketNumber,
-  });
-
-  @override
-  List<Object> get props =>
-      [doctorName, doctorSpecialty, cabinetNumber, ticketNumber];
-}
-
+// Состояние ошибки
 class WaitingScreenError extends WaitingScreenState {
   final String message;
 

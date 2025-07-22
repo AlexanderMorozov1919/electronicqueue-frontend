@@ -50,31 +50,13 @@ class WaitingScreenBloc extends Bloc<WaitingScreenEvent, WaitingScreenState> {
     LoadWaitingScreen event,
     Emitter<WaitingScreenState> emit,
   ) async {
-    await emit.forEach<WaitingScreenEntity>(
+    emit(WaitingScreenLoading());
+    
+    await emit.forEach<DoctorQueueEntity>(
       _getWaitingScreenData(
           GetWaitingScreenDataParams(cabinetNumber: event.cabinetNumber)),
       onData: (entity) {
-        // 1. Проверяем, есть ли специальное сообщение от сервера (например, "нет приема")
-        if (entity.message != null && entity.message!.isNotEmpty) {
-          return WaitingScreenNoReception(message: entity.message!);
-        }
-        
-        // 2. Если сообщения нет, проверяем, вызван ли кто-то
-        if (entity.isCalled) {
-          return WaitingScreenCalled(
-            doctorName: entity.doctorName,
-            doctorSpecialty: entity.doctorSpecialty,
-            cabinetNumber: entity.cabinetNumber,
-            ticketNumber: entity.currentTicket ?? '',
-          );
-        } else {
-          // 3. Иначе - состояние ожидания
-          return WaitingScreenWaiting(
-            doctorName: entity.doctorName,
-            doctorSpecialty: entity.doctorSpecialty,
-            cabinetNumber: entity.cabinetNumber,
-          );
-        }
+        return DoctorQueueLoaded(queueEntity: entity);
       },
       onError: (error, stackTrace) =>
           WaitingScreenError(message: error.toString()),
