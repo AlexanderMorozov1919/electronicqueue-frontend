@@ -5,7 +5,7 @@ import '../../../config/app_config.dart';
 import '../models/waiting_screen_model.dart';
 
 abstract class WaitingScreenRemoteDataSource {
-  Stream<WaitingScreenModel> getWaitingScreenData(int cabinetNumber);
+  Stream<DoctorQueueModel> getWaitingScreenData(int cabinetNumber);
   Future<List<int>> getActiveCabinets();
 }
 
@@ -33,8 +33,8 @@ class WaitingScreenRemoteDataSourceImpl
   }
 
   @override
-  Stream<WaitingScreenModel> getWaitingScreenData(int cabinetNumber) {
-    final controller = StreamController<WaitingScreenModel>();
+  Stream<DoctorQueueModel> getWaitingScreenData(int cabinetNumber) {
+    final controller = StreamController<DoctorQueueModel>();
 
     Future<void> connect() async {
       try {
@@ -58,19 +58,15 @@ class WaitingScreenRemoteDataSourceImpl
                 _currentEvent = line.substring(6).trim();
               } else if (line.startsWith('data:')) {
                 final data = line.substring(5).trim();
-                if (_currentEvent == 'state_update' ||
-                    _currentEvent == 'error') {
+                if (_currentEvent == 'state_update') {
                   try {
                     final json = jsonDecode(data);
-                    if (json['error'] != null) {
-                      controller.addError(Exception(json['error']));
-                    } else {
-                      final model = WaitingScreenModel.fromJson(json);
-                      controller.add(model);
-                    }
+                    final model = DoctorQueueModel.fromJson(json);
+                    controller.add(model);
                   } catch (e) {
                     print(
                         "SSE Doctor: Failed to parse data. Error: $e, Data: $data");
+                    controller.addError(Exception("Ошибка парсинга данных от сервера."));
                   }
                 }
               }
