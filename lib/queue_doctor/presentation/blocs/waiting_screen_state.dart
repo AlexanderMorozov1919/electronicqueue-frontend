@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../domain/entities/waiting_screen_entity.dart';
 
 abstract class WaitingScreenState extends Equatable {
   const WaitingScreenState();
@@ -7,40 +8,46 @@ abstract class WaitingScreenState extends Equatable {
   List<Object> get props => [];
 }
 
+class WaitingScreenInitial extends WaitingScreenState {}
+
 class WaitingScreenLoading extends WaitingScreenState {}
 
-class WaitingScreenWaiting extends WaitingScreenState {
-  final String doctorName;
-  final String doctorSpecialty;
-  final int officeNumber;
+// Состояние для выбора кабинета
+class CabinetSelection extends WaitingScreenState {
+  final List<int> allCabinets;
+  final List<int> filteredCabinets;
 
-  const WaitingScreenWaiting({
-    required this.doctorName,
-    required this.doctorSpecialty,
-    required this.officeNumber,
+  const CabinetSelection({
+    required this.allCabinets,
+    required this.filteredCabinets,
   });
 
   @override
-  List<Object> get props => [doctorName, doctorSpecialty, officeNumber];
+  List<Object> get props => [allCabinets, filteredCabinets];
+
+  CabinetSelection copyWith({
+    List<int>? allCabinets,
+    List<int>? filteredCabinets,
+  }) {
+    return CabinetSelection(
+      allCabinets: allCabinets ?? this.allCabinets,
+      filteredCabinets: filteredCabinets ?? this.filteredCabinets,
+    );
+  }
 }
 
-class WaitingScreenCalled extends WaitingScreenState {
-  final String doctorName;
-  final String doctorSpecialty;
-  final int officeNumber;
-  final String ticketNumber;
+// Состояние, когда данные об очереди загружены
+class DoctorQueueLoaded extends WaitingScreenState {
+  final DoctorQueueEntity queueEntity;
 
-  const WaitingScreenCalled({
-    required this.doctorName,
-    required this.doctorSpecialty,
-    required this.officeNumber,
-    required this.ticketNumber,
-  });
+  const DoctorQueueLoaded({required this.queueEntity});
 
   @override
-  List<Object> get props => [doctorName, doctorSpecialty, officeNumber, ticketNumber];
+  List<Object> get props => [queueEntity];
 }
 
+
+// Состояние ошибки
 class WaitingScreenError extends WaitingScreenState {
   final String message;
 
