@@ -5,7 +5,7 @@ class DoctorQueueTicketEntity extends Equatable {
   final String startTime;
   final String ticketNumber;
   final String patientFullName;
-  final String status; // "на_приеме" или "зарегистрирован"
+  final String status;
 
   const DoctorQueueTicketEntity({
     required this.startTime,
@@ -24,13 +24,15 @@ class DoctorQueueEntity extends Equatable {
   final String doctorSpecialty;
   final int cabinetNumber;
   final List<DoctorQueueTicketEntity> queue;
-  final String? message; // Сообщение от сервера, например, "нет приема"
+  final String? message;
+  final String doctorStatus;
 
   const DoctorQueueEntity({
     required this.doctorName,
     required this.doctorSpecialty,
     required this.cabinetNumber,
     required this.queue,
+    required this.doctorStatus,
     this.message,
   });
 
@@ -41,5 +43,6 @@ class DoctorQueueEntity extends Equatable {
         cabinetNumber,
         queue,
         message,
+        doctorStatus,
       ];
 }
