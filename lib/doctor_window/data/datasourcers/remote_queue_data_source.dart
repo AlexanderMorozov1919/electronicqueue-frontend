@@ -5,12 +5,14 @@ import '../models/queue_model.dart';
 import '../api/doctor_api.dart';
 import 'queue_data_source.dart';
 import '../../core/errors/exceptions.dart';
+import '../services/auth_service.dart';
 
 import 'package:http/http.dart' as http;
 
 class RemoteQueueDataSource implements QueueDataSource {
   final DoctorApi api;
   final http.Client _client;
+  final AuthService _authService = AuthService();
 
   RemoteQueueDataSource({required this.api, http.Client? client})
     : _client = client ?? http.Client();
@@ -83,24 +85,38 @@ class RemoteQueueDataSource implements QueueDataSource {
 
   @override
   Future<QueueEntity> startBreak() async {
-    return QueueModel(
-    isAppointmentInProgress: false,
-    isOnBreak: true,
-    queueLength: 0,
-    currentTicket: null,
-    activeTicketId: null,
-  );
+    try {
+      final doctorId = await _authService.getDoctorId();
+      await api.startBreak(doctorId);
+      
+      return QueueModel(
+        isAppointmentInProgress: false,
+        isOnBreak: true,
+        queueLength: 0,
+        currentTicket: null,
+        activeTicketId: null,
+      );
+    } catch (e) {
+      throw ServerException('Ошибка начала перерыва: $e');
+    }
   }
 
   @override
   Future<QueueEntity> endBreak() async {
-    return QueueModel(
-    isAppointmentInProgress: false,
-    isOnBreak: false,
-    queueLength: 0,
-    currentTicket: null,
-    activeTicketId: null,
-  );
+    try {
+      final doctorId = await _authService.getDoctorId();
+      await api.endBreak(doctorId);
+      
+      return QueueModel(
+        isAppointmentInProgress: false,
+        isOnBreak: false,
+        queueLength: 0,
+        currentTicket: null,
+        activeTicketId: null,
+      );
+    } catch (e) {
+      throw ServerException('Ошибка завершения перерыва: $e');
+    }
   }
 
   @override
@@ -108,7 +124,6 @@ class RemoteQueueDataSource implements QueueDataSource {
     final controller = StreamController<void>();
 
     void connect() async {
-      print("Doctor SSE: Connecting...");
       try {
         final request = http.Request(
           'GET',
@@ -120,34 +135,26 @@ class RemoteQueueDataSource implements QueueDataSource {
         final response = await _client.send(request);
 
         if (response.statusCode == 200) {
-          print("Doctor SSE: Connected successfully.");
           response.stream
               .transform(utf8.decoder)
               .transform(const LineSplitter())
               .listen(
                 (line) {
                   if (line.startsWith('data:')) {
-                    print("Doctor SSE: Received update event. Notifying BLoC.");
                     controller.add(null);
                   }
                 },
                 onDone: () {
-                  print("Doctor SSE: Stream closed. Reconnecting...");
                   Future.delayed(const Duration(seconds: 5), connect);
                 },
                 onError: (e, s) {
-                  print("Doctor SSE: Stream error. Reconnecting... Error: $e");
                   Future.delayed(const Duration(seconds: 5), connect);
                 },
               );
         } else {
-          print(
-            "Doctor SSE: Failed to connect. Status: ${response.statusCode}. Retrying...",
-          );
           Future.delayed(const Duration(seconds: 5), connect);
         }
       } catch (e) {
-        print("Doctor SSE: Connection error: $e. Retrying...");
         Future.delayed(const Duration(seconds: 5), connect);
       }
     }
