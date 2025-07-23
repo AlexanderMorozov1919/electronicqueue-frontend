@@ -56,7 +56,7 @@ class QueueStatusWidget extends StatelessWidget {
                       const Text(
                         'Идет прием',
                         style: TextStyle(
-                          fontSize: 24,
+                          fontSize: 30,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -64,15 +64,15 @@ class QueueStatusWidget extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
                           'Талон ${queue.currentTicket}',
                           style: const TextStyle(
-                            fontSize: 32,
+                            fontSize: 40,
                             fontWeight: FontWeight.bold,
-                            color: Colors.blue,
+                            color: Colors.black,
                           ),
                         ),
                       ),
@@ -85,22 +85,22 @@ class QueueStatusWidget extends StatelessWidget {
                           const Text(
                             'Перерыв',
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: 30,
                               fontWeight: FontWeight.bold,
-                              color: Colors.orange,
+                              color: Colors.black,
                             ),
                           ),
                           const SizedBox(height: 16),
                           const Icon(
                             Icons.coffee,
                             size: 64,
-                            color: Colors.orange,
+                            color: const Color(0xFF415BE7),
                           ),
                           const SizedBox(height: 16),
                           Text(
                             '${queue.queueLength} талонов в очереди',
                             style: const TextStyle(
-                              fontSize: 20,
+                              fontSize: 30,
                               color: Colors.black54,
                             ),
                           ),
@@ -112,7 +112,7 @@ class QueueStatusWidget extends StatelessWidget {
                           const Text(
                             'Очередь',
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: 30,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -120,7 +120,7 @@ class QueueStatusWidget extends StatelessWidget {
                           Text(
                             '${queue.queueLength} талонов',
                             style: const TextStyle(
-                              fontSize: 32,
+                              fontSize: 40,
                               fontWeight: FontWeight.bold,
                               color: Colors.black54,
                             ),
@@ -136,7 +136,7 @@ class QueueStatusWidget extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: canEndBreak ? Colors.green : Colors.orange,
+                  backgroundColor: canEndBreak ? const Color(0xFF4EB8A6) : Color(0xFFFFA100),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -152,7 +152,7 @@ class QueueStatusWidget extends StatelessWidget {
                 },
                 child: Text(
                   canEndBreak ? 'Завершить перерыв' : 'Начать перерыв',
-                  style: const TextStyle(fontSize: 18, color: Colors.white),
+                  style: const TextStyle(fontSize: 40, color: Colors.white),
                 ),
               ),
             ),
@@ -162,8 +162,8 @@ class QueueStatusWidget extends StatelessWidget {
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: queue.isAppointmentInProgress
-                  ? Colors.red
-                  : (canCallNext ? Colors.blue : Colors.grey),
+                  ? const Color(0xFFF44336)
+                  : (canCallNext ? const Color(0xFF415BE7) : Colors.grey),
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -183,7 +183,7 @@ class QueueStatusWidget extends StatelessWidget {
               queue.isAppointmentInProgress
                   ? 'Завершить прием'
                   : 'Вызвать следующего пациента',
-              style: const TextStyle(fontSize: 18, color: Colors.white),
+              style: const TextStyle(fontSize: 40, color: Colors.white),
             ),
           ),
         ),
