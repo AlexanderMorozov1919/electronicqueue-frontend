@@ -11,7 +11,7 @@ class QueueDisplayPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: const Color(0xFFF1F3F4),
       body: AudioControlWidget(
         child: Column(
           children: [

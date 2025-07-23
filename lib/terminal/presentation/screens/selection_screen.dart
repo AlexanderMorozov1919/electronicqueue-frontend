@@ -25,6 +25,7 @@ class _SelectionScreenState extends State<SelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
           'Выберите услугу',
@@ -32,6 +33,7 @@ class _SelectionScreenState extends State<SelectionScreen> {
         ),
         centerTitle: true,
         toolbarHeight: 90,
+        backgroundColor: Colors.white,
       ),
       body: Center(
         child: Padding(

@@ -25,7 +25,9 @@ class DoctorQueueScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF1F3F4),
       appBar: AppBar(
+        backgroundColor: const Color(0xFFF1F3F4),
         title: BlocBuilder<AuthBloc, AuthState>(
           builder: (context, state) {
             if (state is AuthSuccess) {

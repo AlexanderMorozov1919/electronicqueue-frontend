@@ -16,6 +16,7 @@ class TicketsListSection extends StatelessWidget {
             : [];
 
         return Card(
+          color: Colors.white,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
