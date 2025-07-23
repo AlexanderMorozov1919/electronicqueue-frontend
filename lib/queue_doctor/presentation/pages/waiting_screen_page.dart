@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/waiting_screen_entity.dart';
 import '../blocs/waiting_screen_bloc.dart';
-import '../blocs/waiting_screen_event.dart'; // Добавлен импорт
+import '../blocs/waiting_screen_event.dart';
 import '../blocs/waiting_screen_state.dart';
 
-class WaitingScreenPage extends StatefulWidget { // Изменено на StatefulWidget
+class WaitingScreenPage extends StatefulWidget {
   final int cabinetNumber;
 
   const WaitingScreenPage({super.key, required this.cabinetNumber});
@@ -18,13 +18,31 @@ class _WaitingScreenPageState extends State<WaitingScreenPage> {
   @override
   void initState() {
     super.initState();
-    // Запускаем загрузку данных ПОСЛЕ того, как первый кадр отрисован.
-    // Это гарантирует, что анимация перехода на страницу пройдет гладко.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context
           .read<WaitingScreenBloc>()
           .add(LoadWaitingScreen(cabinetNumber: widget.cabinetNumber));
     });
+  }
+
+  String _shortenName(String fullName) {
+    if (fullName.trim().isEmpty || fullName == 'Неизвестный пациент') {
+      return 'Неизвестный пациент';
+    }
+    final parts = fullName.trim().split(' ').where((s) => s.isNotEmpty).toList();
+    if (parts.length < 2) {
+      return fullName;
+    }
+
+    final lastName = parts[0];
+    final firstNameInitial = '${parts[1][0]}.';
+
+    if (parts.length < 3) {
+      return '$lastName $firstNameInitial';
+    }
+
+    final middleNameInitial = '${parts[2][0]}.';
+    return '$lastName $firstNameInitial $middleNameInitial';
   }
 
   @override
@@ -42,8 +60,11 @@ class _WaitingScreenPageState extends State<WaitingScreenPage> {
             return SingleChildScrollView(
               child: Column(
                 children: [
-                  _buildModernHeader(entity.doctorName, entity.doctorSpecialty,
-                      entity.cabinetNumber),
+                  _buildModernHeader(
+                      entity.doctorName,
+                      entity.doctorSpecialty,
+                      entity.cabinetNumber,
+                      entity.doctorStatus),
                   const SizedBox(height: 16),
                   _buildQueueHeader(),
                   entity.queue.isEmpty
@@ -61,7 +82,7 @@ class _WaitingScreenPageState extends State<WaitingScreenPage> {
           return SingleChildScrollView(
             child: Column(
               children: [
-                _buildModernHeader("", "", widget.cabinetNumber),
+                _buildModernHeader("", "", widget.cabinetNumber, "неактивен"),
                 const SizedBox(height: 16),
                 _buildQueueHeader(),
                 _buildQueueLoading(),
@@ -197,16 +218,23 @@ class _WaitingScreenPageState extends State<WaitingScreenPage> {
     );
   }
 
-  Widget _buildModernHeader(String doctorName, String specialty, int cabinetNumber) {
+  Widget _buildModernHeader(String doctorName, String specialty, int cabinetNumber, String doctorStatus) {
+    final bool isOnBreak = doctorStatus == 'перерыв';
+    final String headerText =
+        isOnBreak ? 'КАБИНЕТ $cabinetNumber - ПЕРЕРЫВ' : 'КАБИНЕТ $cabinetNumber';
+    final List<Color> gradientColors = isOnBreak
+        ? [const Color(0xFFF97316), const Color(0xFFEA580C), const Color(0xFFD97706)]
+        : [const Color(0xFF1B4193), const Color(0xFF2563EB), const Color(0xFF3B82F6)];
+
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1B4193), Color(0xFF2563EB), Color(0xFF3B82F6)],
+          colors: gradientColors,
         ),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: Color(0x1A000000),
             blurRadius: 20,
@@ -231,26 +259,28 @@ class _WaitingScreenPageState extends State<WaitingScreenPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.meeting_room,
+                  Icon(
+                    isOnBreak ? Icons.coffee_rounded : Icons.meeting_room,
                     color: Colors.white,
                     size: 40,
                   ),
                   const SizedBox(width: 16),
-                  Text(
-                    'КАБИНЕТ $cabinetNumber',
-                    style: const TextStyle(
-                      fontSize: 56,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: 2,
-                      height: 1.1,
+                  Flexible(
+                    child: Text(
+                      headerText,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 56,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 2,
+                        height: 1.1,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            
             if (doctorName.isNotEmpty) ...[
               const SizedBox(height: 24),
               Container(
@@ -555,7 +585,7 @@ class _WaitingScreenPageState extends State<WaitingScreenPage> {
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    item.patientFullName,
+                    _shortenName(item.patientFullName),
                     style: const TextStyle(
                       fontSize: 28,
                       color: Color(0xFF1F2937),

@@ -27,6 +27,7 @@ class DoctorQueueModel extends DoctorQueueEntity {
     required super.doctorSpecialty,
     required super.cabinetNumber,
     required super.queue,
+    required super.doctorStatus,
     super.message,
   });
 
@@ -41,6 +42,7 @@ class DoctorQueueModel extends DoctorQueueEntity {
           .map((item) =>
               DoctorQueueTicketModel.fromJson(item as Map<String, dynamic>))
           .toList(),
+      doctorStatus: json['doctor_status'] as String? ?? 'неактивен',
       message: json['message'] as String?,
     );
   }
