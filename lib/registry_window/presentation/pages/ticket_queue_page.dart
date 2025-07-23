@@ -39,9 +39,9 @@ class TicketQueuePage extends StatelessWidget {
         ),
       )..add(LoadCurrentTicketEvent()),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF1F3F4),
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: const Color(0xFFF1F3F4),
           title: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
