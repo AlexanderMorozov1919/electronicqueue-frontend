@@ -89,10 +89,12 @@ class RemoteQueueDataSource implements QueueDataSource {
       final doctorId = await _authService.getDoctorId();
       await api.startBreak(doctorId);
       
+      final registeredTickets = await api.getRegisteredTickets();
+      
       return QueueModel(
         isAppointmentInProgress: false,
         isOnBreak: true,
-        queueLength: 0,
+        queueLength: registeredTickets.length,
         currentTicket: null,
         activeTicketId: null,
       );
@@ -107,10 +109,12 @@ class RemoteQueueDataSource implements QueueDataSource {
       final doctorId = await _authService.getDoctorId();
       await api.endBreak(doctorId);
       
+      final registeredTickets = await api.getRegisteredTickets();
+      
       return QueueModel(
         isAppointmentInProgress: false,
         isOnBreak: false,
-        queueLength: 0,
+        queueLength: registeredTickets.length,
         currentTicket: null,
         activeTicketId: null,
       );
