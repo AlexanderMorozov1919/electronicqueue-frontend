@@ -42,7 +42,7 @@ class NextTicketButton extends StatelessWidget {
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
-              backgroundColor: Colors.blue,
+              backgroundColor: const Color(0xFF415BE7),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

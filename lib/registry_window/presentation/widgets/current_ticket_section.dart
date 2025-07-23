@@ -32,6 +32,7 @@ class CurrentTicketSection extends StatelessWidget {
         !currentTicket.isRegistered;
 
     return Card(
+      color: const Color(0xFFF1F3F4),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -104,7 +105,7 @@ class CurrentTicketSection extends StatelessWidget {
         minimumSize: const Size(150, 50),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        backgroundColor: Colors.green,
+        backgroundColor: const Color(0xFF4EB8A6),
         foregroundColor: Colors.white,
         disabledBackgroundColor: Colors.grey,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -124,7 +125,7 @@ class CurrentTicketSection extends StatelessWidget {
         minimumSize: const Size(150, 50),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        backgroundColor: Colors.orange,
+        backgroundColor: const Color(0xFFFFA100),
         foregroundColor: Colors.white,
         disabledBackgroundColor: Colors.grey,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

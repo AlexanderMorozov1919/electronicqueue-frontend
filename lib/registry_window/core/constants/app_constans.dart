@@ -4,4 +4,5 @@ class AppConstants {
   static const String registerButton = 'Зарегистрировать';
   static const String completeButton = 'Завершить';
   static const String callNextButton = 'Вызвать следующего';
+  static const String windowNumberLabel = 'Окно №';
 }
