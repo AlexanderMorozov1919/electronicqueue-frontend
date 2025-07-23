@@ -63,10 +63,12 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Подтверждение'),
         centerTitle: true,
         toolbarHeight: 90,
+        backgroundColor: Colors.white,
       ),
       body: Center(
         child: Padding(

@@ -55,10 +55,12 @@ class _PrintingScreenState extends State<PrintingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Печать талона'),
         centerTitle: true,
         automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
       ),
       body: Stack(
         children: [
