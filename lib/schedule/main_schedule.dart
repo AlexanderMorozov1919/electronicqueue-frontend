@@ -1,13 +1,15 @@
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'presentation/blocs/schedule_bloc.dart';
 import 'presentation/pages/schedule_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   await initializeDateFormatting('ru');
+
   runApp(const MyApp());
 }
 

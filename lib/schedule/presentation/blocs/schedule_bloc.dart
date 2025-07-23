@@ -1,17 +1,21 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:async';
-
+import 'package:intl/intl.dart';
 import '../../domain/entities/booking.dart';
 import '../../domain/usecases/get_schedule.dart';
-import 'package:intl/intl.dart';
-
 import '../../data/repositories/schedule_repository_impl.dart';
+import '../../data/datasources/schedule_remote_data_source.dart'; 
 
 part 'schedule_event.dart';
 part 'schedule_state.dart';
 
-
 class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
+  final GetSchedule _getSchedule = GetSchedule(
+    ScheduleRepositoryImpl(
+      remoteDataSource: ScheduleRemoteDataSourceImpl(),
+    ),
+  );
+
   ScheduleBloc() : super(ScheduleInit()) {
     on<FetchScheduleData>(_onFetchScheduleData);
     on<BuildSchedule>(_onBuildSchedule);
@@ -22,41 +26,64 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
     on<RefreshSheduleData>(_onRefreshSheduleData);
   }
 
-  Future<void> _onRefreshSheduleData(
-      RefreshSheduleData event, Emitter<ScheduleState> emit) async {
-    try {
-      if (state is ScheduleLoaded) {
-        final currentState = state as ScheduleLoaded;
-        DateFormat formatter = DateFormat('yyyy-MM-dd');
+  Future<ScheduleLoaded> _loadAndProcessSchedule(DateTime date, {ScheduleFilter? existingFilter}) async {
+    final DateFormat formatter = DateFormat('yyyy-MM-dd');
+    final List<Booking> bookings = await _getSchedule.execute(formatter.format(date), 1);
 
-        final GetSchedule getSchedule = GetSchedule(ScheduleRepositoryImpl());
-        final List<Booking> bookings = await getSchedule.execute(
-            formatter.format(currentState.scheduleDay), 1);
+    if (bookings.isEmpty) {
+      return ScheduleLoaded(
+        scheduleDay: date,
+        currentTime: DateTime.now(),
+        startTime: DateTime(date.year, date.month, date.day, 9), 
+        endTime: DateTime(date.year, date.month, date.day, 18),
+        timeInterval: const Duration(minutes: 60),
+        bookings: [],
+        filter: ScheduleFilter.fromBookings([]),
+        timePoints: [],
+        minTimeInterval: const Duration(minutes: 5),
+      );
+    }
 
-        final List<DateTime> bookingsTimes =
-            _getBookingsTimes(bookings: bookings);
+    DateTime overallStartTime = bookings.first.startTime;
+    DateTime overallEndTime = bookings.first.endTime;
 
-        final List<TimePoint> timePoints = _generateTimeSlots(
-            startTime: currentState.startTime,
-            endTime: currentState.endTime,
-            timeInterval: currentState.timeInterval,
-            bookingTimePoints: bookingsTimes);
-
-        final ScheduleFilter scheduleFilter =
-            ScheduleFilter.fromBookings(bookings);
-
-        emit(ScheduleLoaded(
-          scheduleDay: currentState.scheduleDay,
-          currentTime: currentState.currentTime,
-          startTime: currentState.startTime,
-          endTime: currentState.endTime,
-          timeInterval: currentState.timeInterval,
-          bookings: bookings,
-          filter: scheduleFilter,
-          timePoints: timePoints,
-          minTimeInterval: currentState.minTimeInterval,
-        ));
+    for (var booking in bookings) {
+      if (booking.startTime.isBefore(overallStartTime)) {
+        overallStartTime = booking.startTime;
       }
+      if (booking.endTime.isAfter(overallEndTime)) {
+        overallEndTime = booking.endTime;
+      }
+    }
+
+    final List<DateTime> bookingsTimes = _getBookingsTimes(bookings: bookings);
+    final List<TimePoint> timePoints = _generateTimeSlots(
+        startTime: overallStartTime,
+        endTime: overallEndTime,
+        timeInterval: const Duration(minutes: 60), 
+        bookingTimePoints: bookingsTimes);
+
+    final ScheduleFilter scheduleFilter = existingFilter ?? ScheduleFilter.fromBookings(bookings);
+
+    return ScheduleLoaded(
+      scheduleDay: date,
+      currentTime: DateTime.now(),
+      startTime: overallStartTime, 
+      endTime: overallEndTime,     
+      timeInterval: const Duration(minutes: 60),
+      bookings: bookings,
+      filter: scheduleFilter,
+      timePoints: timePoints,
+      minTimeInterval: const Duration(minutes: 5),
+    );
+  }
+
+  Future<void> _onBuildSchedule(
+      BuildSchedule event, Emitter<ScheduleState> emit) async {
+    emit(ScheduleLoading());
+    try {
+      final newState = await _loadAndProcessSchedule(event.scheduleDay);
+      emit(newState);
     } catch (e) {
       emit(ScheduleError());
     }
@@ -65,81 +92,27 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
   Future<void> _onFetchScheduleData(
       FetchScheduleData event, Emitter<ScheduleState> emit) async {
     try {
-      final currentState = state as ScheduleLoaded;
-      DateFormat formatter = DateFormat('yyyy-MM-dd');
-
-      final GetSchedule getSchedule = GetSchedule(ScheduleRepositoryImpl());
-      final List<Booking> bookings = await getSchedule.execute(
-          formatter.format(event.date), 1);
-
-      final List<DateTime> bookingsTimes =
-          _getBookingsTimes(bookings: bookings);
-
-      final List<TimePoint> timePoints = _generateTimeSlots(
-          startTime: currentState.startTime,
-          endTime: currentState.endTime,
-          timeInterval: currentState.timeInterval,
-          bookingTimePoints: bookingsTimes);
-
-      final ScheduleFilter scheduleFilter =
-          ScheduleFilter.fromBookings(bookings);
-
-      emit(ScheduleLoaded(
-        scheduleDay: currentState.scheduleDay,
-        currentTime: currentState.currentTime,
-        startTime: currentState.startTime,
-        endTime: currentState.endTime,
-        timeInterval: currentState.timeInterval,
-        bookings: bookings,
-        filter: scheduleFilter,
-        timePoints: timePoints,
-        minTimeInterval: currentState.minTimeInterval,
-      ));
+      final newState = await _loadAndProcessSchedule(event.date, existingFilter: (state as ScheduleLoaded).filter);
+      emit(newState);
     } catch (e) {
       emit(ScheduleError());
     }
   }
 
-  Future<void> _onBuildSchedule(
-      BuildSchedule event, Emitter<ScheduleState> emit) async {
-    emit(ScheduleLoading());
-    try {
-      final DateFormat formatter = DateFormat('yyyy-MM-dd');
-      final GetSchedule getSchedule = GetSchedule(ScheduleRepositoryImpl());
-      final List<Booking> bookings = await getSchedule.execute(
-          formatter.format(event.scheduleDay), 1);
-
-      final List<DateTime> bookingsTimes =
-          _getBookingsTimes(bookings: bookings);
-
-      final List<TimePoint> timePoints = _generateTimeSlots(
-          startTime: event.startTime,
-          endTime: event.endTime,
-          timeInterval: event.timeInterval,
-          bookingTimePoints: bookingsTimes);
-
-      final ScheduleFilter scheduleFilter =
-          ScheduleFilter.fromBookings(bookings);
-
-      emit(ScheduleLoaded(
-        scheduleDay: event.scheduleDay,
-        currentTime: event.currentTime,
-        startTime: event.startTime,
-        endTime: event.endTime,
-        timeInterval: event.timeInterval,
-        bookings: bookings,
-        filter: scheduleFilter,
-        timePoints: timePoints,
-        minTimeInterval: event.minTimeInterval,
-      ));
-    } catch (e) {
-      emit(ScheduleError());
-      print(e);
+  Future<void> _onRefreshSheduleData(
+      RefreshSheduleData event, Emitter<ScheduleState> emit) async {
+    if (state is ScheduleLoaded) {
+      try {
+        final currentState = state as ScheduleLoaded;
+        final newState = await _loadAndProcessSchedule(currentState.scheduleDay, existingFilter: currentState.filter);
+        emit(newState);
+      } catch (e) {
+        emit(ScheduleError());
+      }
     }
   }
-
-  void _onToogleFilterItem(
-      ToogleFilterItem event, Emitter<ScheduleState> emit) {
+  
+  void _onToogleFilterItem(ToogleFilterItem event, Emitter<ScheduleState> emit) {
     final currentState = state as ScheduleLoaded;
     final ScheduleFilter currentFilter = currentState.filter;
 
@@ -204,8 +177,7 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
         final currentState = state as ScheduleLoaded;
         DateFormat formatter = DateFormat('yyyy-MM-dd');
 
-        final GetSchedule getSchedule = GetSchedule(ScheduleRepositoryImpl());
-        final List<Booking> bookings = await getSchedule.execute(
+        final List<Booking> bookings = await _getSchedule.execute(
             formatter.format(currentState.scheduleDay), 1);
 
         final bool isFilterEmpty = currentState.filter.areAllValuesFalse();
@@ -220,8 +192,6 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
                 currentState.filter.branch!.any((item) =>
                     item.title == actor.branchName && item.value == true);
 
-            
-
             bool matchesEquipmentType = currentState.filter.equipmentType !=
                     null &&
                 currentState.filter.equipmentType!.any((item) =>
@@ -231,17 +201,13 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
           }).toList();
         }
 
-        // Генерация временных точек
-        final List<DateTime> bookingsTimes =
-            _getBookingsTimes(bookings: filteredBookings);
-
+        final List<DateTime> bookingsTimes = _getBookingsTimes(bookings: filteredBookings);
         final List<TimePoint> timePoints = _generateTimeSlots(
             startTime: currentState.startTime,
             endTime: currentState.endTime,
             timeInterval: currentState.timeInterval,
             bookingTimePoints: bookingsTimes);
 
-        // Обновление состояния
         emit(ScheduleLoaded(
           minTimeInterval: currentState.minTimeInterval,
           scheduleDay: currentState.scheduleDay,
@@ -295,40 +261,31 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
     }
   }
 
-  List<DateTime> _getBookingsTimes({
-    required List<Booking> bookings,
-  }) {
+  List<DateTime> _getBookingsTimes({required List<Booking> bookings}) {
     List<DateTime> timeSlots = [];
     for (Booking booking in bookings) {
       timeSlots.addAll(booking.getTimes());
     }
     Set<DateTime> uniqueTimeSlots = Set<DateTime>.from(timeSlots);
-    List<DateTime> result = uniqueTimeSlots.toList()
-      ..sort((a, b) => a.compareTo(b));
-
+    List<DateTime> result = uniqueTimeSlots.toList()..sort((a, b) => a.compareTo(b));
     return result;
   }
 
-  List<TimePoint> _generateTimeSlots({
-    required DateTime startTime,
-    required DateTime endTime,
-    required Duration timeInterval,
-    required List<DateTime> bookingTimePoints,
-  }) {
-    //
+  List<TimePoint> _generateTimeSlots(
+      {required DateTime startTime,
+      required DateTime endTime,
+      required Duration timeInterval,
+      required List<DateTime> bookingTimePoints}) {
     final Duration interval = (timeInterval.inMinutes % 2 == 0)
         ? Duration(minutes: timeInterval.inMinutes ~/ 2)
         : timeInterval;
 
-    // Проверка входных данных
     if (startTime.isAfter(endTime)) {
       throw ArgumentError("Start time cannot be after end time.");
     }
 
-    // Генерация временных слотов с isAxis = true
     List<TimePoint> timeSlots = [];
     DateTime currentTime = startTime;
-
     while (!currentTime.isAfter(endTime)) {
       timeSlots.add(TimePoint(
           isAxis: (((currentTime.difference(startTime).inMinutes ~/
@@ -341,8 +298,7 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
           time: currentTime));
       currentTime = currentTime.add(interval);
     }
-
-    // Добавление bookingTimePoints с isAxis = false
+    
     for (var bookingTime in bookingTimePoints) {
       if (!bookingTime.isBefore(startTime) && !bookingTime.isAfter(endTime)) {
         timeSlots.add(TimePoint(
@@ -357,7 +313,6 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
       }
     }
 
-    // Удаление дубликатов и сортировка
     Set<TimePoint> uniqueTimeSlots = Set<TimePoint>.from(timeSlots);
     List<TimePoint> result = uniqueTimeSlots.toList()
       ..sort((a, b) => a.time.compareTo(b.time));
