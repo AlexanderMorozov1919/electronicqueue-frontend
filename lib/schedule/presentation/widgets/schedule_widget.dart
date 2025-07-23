@@ -1,11 +1,9 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
-// Импортируются необходимые пакеты для работы с навигацией, состоянием (BLoC), SVG-иконками и темой приложения.
 
 import '../blocs/schedule_bloc.dart';
 
@@ -87,10 +85,9 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
       BuildContext context, ScheduleLoaded state, AppTheme appTheme) {
     final recordsNum = _countBottomClasses(state.bookings);
 
-    // 1. Получаем уникальных врачей (по ФИО)
     final doctors = <String, List<Booking>>{};
     for (final booking in state.bookings) {
-      final doctor = booking.actor.employeeName ?? 'Неизвестный врач';
+      final doctor = booking.actor.employeeName;
       if (!doctors.containsKey(doctor)) {
         doctors[doctor] = [];
       }
@@ -138,7 +135,6 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
                     appTheme: appTheme,
                     sectionHeight: 60,
                     timePoints: state.timePoints),
-                // Для каждого врача отдельная колонка
                 for (final entry in doctors.entries) ...[
                   ScheduleColumn(
                     appTheme: appTheme,

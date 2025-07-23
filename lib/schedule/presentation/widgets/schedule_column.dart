@@ -13,63 +13,64 @@ class ScheduleColumn extends StatelessWidget {
   });
 
   String _formatTimeRange(DateTime startTime, DateTime endTime) {
-    // Функция для форматирования времени в формат "чч:мм"
     String formatTime(DateTime time) {
       String twoDigits(int n) => n.toString().padLeft(2, '0');
       return '${twoDigits(time.hour)}:${twoDigits(time.minute)}';
     }
 
-    // Форматируем начало и конец
     String start = formatTime(startTime);
     String end = formatTime(endTime);
 
-    // Возвращаем строку в формате "9:00 - 9:30"
     return '$start - $end';
   }
 
   List<Widget> _buildCards() {
-  List<Widget> cards = [];
-  
-  for (int i = 0; i < timePoints.length - 1; i++) {
-    final slotStart = timePoints[i].time;
-    final slotEnd = timePoints[i+1].time;
-    
-    bool isBooked = booking.bookingEntities.any((entity) {
-      return (slotStart.isBefore(entity.endTime) && 
-             slotEnd.isAfter(entity.startTime)) ||
-             slotStart.isAtSameMomentAs(entity.startTime);
-    });
+    List<Widget> cards = [];
+    final DateTime now = DateTime.now(); 
 
-    String status;
-    if (slotStart.isBefore(booking.startTime) || 
-        slotStart.isAfter(booking.endTime)) {
-      status = 'unavailable';
-    } else {
-      status = isBooked ? 'busy' : 'free';
+    for (int i = 0; i < timePoints.length - 1; i++) {
+      final slotStart = timePoints[i].time;
+      final slotEnd = timePoints[i + 1].time;
+
+      bool isBooked = booking.bookingEntities.any((entity) {
+        return (slotStart.isBefore(entity.endTime) &&
+                slotEnd.isAfter(entity.startTime)) ||
+            slotStart.isAtSameMomentAs(entity.startTime);
+      });
+
+      String status;
+      if (slotEnd.isBefore(now)) {
+        status = 'unavailable';
+      } else if (slotStart.isBefore(booking.startTime) ||
+          slotEnd.isAfter(booking.endTime)) {
+        status = 'unavailable';
+      } else {
+        status = isBooked ? 'busy' : 'free';
+      }
+
+      cards.add(Container(
+        height: sectionHeight,
+        padding: const EdgeInsets.only(top: 1, bottom: 3, right: 5, left: 5),
+        child: ScheduleCard(
+          appTheme: appTheme,
+          recordId: isBooked
+              ? booking.bookingEntities
+                  .firstWhere((e) =>
+                      (slotStart.isBefore(e.endTime) &&
+                          slotEnd.isAfter(e.startTime)) ||
+                      slotStart.isAtSameMomentAs(e.startTime))
+                  .id
+              : 0,
+          status: status,
+          time: _formatTimeRange(slotStart, slotEnd),
+          actorId: booking.actor.equipmentId,
+          date: slotStart,
+        ),
+      ));
     }
 
-    cards.add(Container(
-      height: sectionHeight,
-      padding: const EdgeInsets.only(top: 1, bottom: 3, right: 5, left: 5),
-      child: ScheduleCard(
-        appTheme: appTheme,
-        recordId: isBooked 
-            ? booking.bookingEntities
-                .firstWhere((e) => (slotStart.isBefore(e.endTime) && 
-                                  slotEnd.isAfter(e.startTime)) ||
-                                  slotStart.isAtSameMomentAs(e.startTime))
-                .id
-            : 0,
-        status: status,
-        time: _formatTimeRange(slotStart, slotEnd),
-        actorId: booking.actor.equipmentId,
-        date: slotStart,
-      ),
-    ));
+    return cards;
   }
-
-  return cards;
-}
 
   List<Widget> _buildScheduleTable() {
     List<Widget> table = [];
@@ -103,7 +104,6 @@ class ScheduleColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: 280,
-      //height: 136,
       child: Column(
         children: [
           Container(
@@ -143,7 +143,7 @@ class ScheduleColumn extends StatelessWidget {
                 child: SizedBox(
                   width: 280,
                   height:
-                      sectionHeight * timePoints.length, // Высота всех секций
+                      sectionHeight * timePoints.length, 
                   child: Column(
                     children: _buildCards(),
                   ),

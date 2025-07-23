@@ -55,10 +55,12 @@ class _DigitalTicketScreenState extends State<DigitalTicketScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Электронный талон'),
         centerTitle: true,
         automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
       ),
       body: Stack(
         children: [
@@ -79,7 +81,7 @@ class _DigitalTicketScreenState extends State<DigitalTicketScreen> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.blue, width: 3),
+                    border: Border.all(color: const Color(0xFF415BE7), width: 3),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(

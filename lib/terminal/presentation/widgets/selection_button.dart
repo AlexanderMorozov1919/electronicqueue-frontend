@@ -29,8 +29,8 @@ class _SimpleButtonState extends State<SimpleButton> {
         height: 150,
         decoration: BoxDecoration(
           color: _isPressed
-              ? const Color.fromARGB(255, 41, 92, 139)
-              : Colors.blue, 
+              ? const Color(0xFF203AC6)
+              : const Color(0xFF415BE7), 
           borderRadius: BorderRadius.circular(20),
         ),
         child: Center(

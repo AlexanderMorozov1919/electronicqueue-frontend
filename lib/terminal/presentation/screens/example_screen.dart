@@ -29,6 +29,7 @@ class _ExampleScreenState extends State<ExampleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: FutureBuilder<String>(
         future: _buttonTextFuture,
         builder: (context, snapshot) {

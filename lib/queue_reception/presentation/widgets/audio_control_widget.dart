@@ -47,7 +47,7 @@ class _AudioControlWidgetState extends State<AudioControlWidget> {
                       const Icon(
                         Icons.volume_up,
                         size: 48,
-                        color: Colors.blue,
+                        color: const Color(0xFF415BE7),
                       ),
                       const SizedBox(height: 16),
                       const Text(
@@ -75,7 +75,7 @@ class _AudioControlWidgetState extends State<AudioControlWidget> {
                         icon: const Icon(Icons.volume_up),
                         label: const Text('Включить звук'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: const Color(0xFF415BE7),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 32,

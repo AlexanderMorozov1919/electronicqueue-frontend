@@ -1,61 +1,61 @@
 import '../../domain/entities/booking.dart';
 import '../../domain/entities/booking_actor.dart';
-import '../../domain/repositories/schedule_repository.dart';
 import '../../domain/entities/booking_entity.dart';
+import '../../domain/repositories/schedule_repository.dart';
+import '../datasources/schedule_remote_data_source.dart';
 
 class ScheduleRepositoryImpl implements ScheduleRepository {
+  final ScheduleRemoteDataSource remoteDataSource;
+
+  ScheduleRepositoryImpl({required this.remoteDataSource});
+
   @override
   Future<List<Booking>> getSchedule(String date, int orgId) async {
-    final doctorIvanov = BookingActor(
-      branchId: 1,
-      branchName: 'Терапевт',
-      employeeId: 1,
-      employeeName: 'Иванов И.И.',
-      equipmentId: 1,
-      equipmentName: 'Кабинет 1',
-      equipmentType: 'Врач',
-    );
-    final doctorPetrov = BookingActor(
-      branchId: 2,
-      branchName: 'Хирург',
-      employeeId: 2,
-      employeeName: 'Петров П.П.',
-      equipmentId: 2,
-      equipmentName: 'Кабинет 2',
-      equipmentType: 'Врач',
-    );
-    return [
-      Booking(
-        startTime: DateTime.parse('$date 09:00:00'),
-        endTime: DateTime.parse('$date 15:00:00'), // Полный рабочий день
-        bookingEntities: [
-          BookingEntity(
-            id: 1,
-            startTime: DateTime.parse('$date 09:30:00'), // Четко внутри слота 09:00-10:00
-            endTime: DateTime.parse('$date 10:00:00'),
-            status: 2,
+    final doctors = await remoteDataSource.getActiveDoctors();
+
+    final scheduleFutures = doctors.map((doctor) {
+      return remoteDataSource.getDoctorSchedule(doctor.id, date);
+    }).toList();
+
+    final schedules = await Future.wait(scheduleFutures);
+
+    final List<Booking> bookings = [];
+    for (int i = 0; i < doctors.length; i++) {
+      final doctor = doctors[i];
+      final scheduleSlots = schedules[i];
+
+      // Пропускаем врачей, у которых нет расписания на этот день
+      if (scheduleSlots.isEmpty) continue;
+
+      final bookingEntities = scheduleSlots.map((slot) {
+        return BookingEntity(
+          id: slot.id, 
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          status: slot.isAvailable ? 8 : 2,  // :-) 
+        );
+      }).toList();
+      
+      final dayStartTime = scheduleSlots.first.startTime;
+      final dayEndTime = scheduleSlots.last.endTime;
+
+      bookings.add(
+        Booking(
+          actor: BookingActor(
+            branchId: doctor.id, 
+            branchName: doctor.specialization,
+            employeeId: doctor.id,
+            employeeName: doctor.fullName,
+            equipmentId: doctor.id,
+            equipmentName: 'Кабинет ${doctor.id + 100}', 
+            equipmentType: 'Врач',
           ),
-          BookingEntity(
-            id: 2,
-            startTime: DateTime.parse('$date 11:00:00'), // Четко внутри слота 11:00-12:00
-            endTime: DateTime.parse('$date 11:30:00'),
-            status: 8,
-          ),
-        ],
-        actor: doctorIvanov,
-      ),
-      Booking(
-        startTime: DateTime.parse('$date 10:00:00'),
-        endTime: DateTime.parse('$date 11:00:00'),
-        bookingEntities: [],
-        actor: doctorPetrov,
-      ),
-      Booking(
-        startTime: DateTime.parse('$date 13:00:00'),
-        endTime: DateTime.parse('$date 14:00:00'),
-        bookingEntities: [],
-        actor: doctorPetrov,
-      ),
-    ];
+          bookingEntities: bookingEntities,
+          startTime: dayStartTime,
+          endTime: dayEndTime,
+        ),
+      );
+    }
+    return bookings;
   }
 }

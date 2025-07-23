@@ -19,14 +19,14 @@ class QueueBreakView extends StatelessWidget {
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: Colors.orange,
+            color: Colors.black,
           ),
         ),
         const SizedBox(height: 16),
         const Icon(
           Icons.coffee,
           size: 64,
-          color: Colors.orange,
+          color: const Color(0xFF415BE7),
         ),
         const SizedBox(height: 16),
         Text(
