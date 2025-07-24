@@ -54,7 +54,6 @@ class ScheduleColumn extends StatelessWidget {
         final slotEndDateTime =
             DateTime.parse('${dateOnly}T${matchingSlot.endTime}');
         
-        // Создаем единую карточку с нужным статусом
         card = ScheduleCard(
           key: ValueKey(
               '${matchingSlot.isAvailable ? 'free' : 'busy'}-${doctorSchedule.id}-${matchingSlot.startTime}'),

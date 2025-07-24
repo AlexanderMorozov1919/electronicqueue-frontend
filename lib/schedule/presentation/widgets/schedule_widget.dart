@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:elqueue/schedule/data/models/today_schedule_model.dart';
 import 'package:elqueue/schedule/domain/entities/today_schedule_entity.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+import 'dart:math'; 
 
 import '../blocs/schedule_bloc.dart';
 
@@ -18,7 +20,6 @@ part 'schedule_head.dart';
 part 'schedule_time_column.dart';
 part 'schedule_info_card.dart';
 
-// Helper classes to replace the old logic
 class TimePoint {
   final DateTime time;
   final bool isAxis;
@@ -26,41 +27,71 @@ class TimePoint {
   TimePoint({required this.time, required this.isAxis});
 }
 
-// Dummy class to satisfy ScheduleHead widget requirements, as filtering
-// is not implemented in the provided BLoC.
 class ScheduleFilter {}
 
-class ScheduleWidget extends StatelessWidget {
+class ScheduleWidget extends StatefulWidget {
   const ScheduleWidget({super.key});
+
+  @override
+  State<ScheduleWidget> createState() => _ScheduleWidgetState();
+}
+
+class _ScheduleWidgetState extends State<ScheduleWidget> {
+  Timer? _timer;
+  int _currentPage = 0;
+  int _doctorsPerPage = 1;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  void _startTimer(int totalDoctors) {
+    _timer?.cancel();
+
+    if (totalDoctors <= _doctorsPerPage) {
+      return;
+    }
+
+    final totalPages = (totalDoctors / _doctorsPerPage).ceil();
+
+    _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (mounted) {
+        setState(() {
+          _currentPage = (_currentPage + 1) % totalPages;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+  
 
   List<TimePoint> _generateTimePoints(
       String? minTimeStr, String? maxTimeStr, String dateStr) {
-    
-    // --- НАЧАЛО ИЗМЕНЕНИЙ ---
-    // Гарантируем, что используется только часть с датой (YYYY-MM-DD)
     final dateOnly = dateStr.split('T').first;
 
-    // Default times if not provided, используя очищенную дату
     final minTime = minTimeStr != null
         ? DateTime.parse('${dateOnly}T$minTimeStr')
         : DateTime.parse('${dateOnly}T09:00:00');
     final maxTime = maxTimeStr != null
         ? DateTime.parse('${dateOnly}T$maxTimeStr')
         : DateTime.parse('${dateOnly}T18:00:00');
-    // --- КОНЕЦ ИЗМЕНЕНИЙ ---
 
     final List<TimePoint> points = [];
     DateTime currentTime = minTime;
 
-    // Generate points with a 30-minute interval
     while (currentTime.isBefore(maxTime)) {
       points.add(TimePoint(
         time: currentTime,
-        isAxis: currentTime.minute == 0, // Major tick on the hour
+        isAxis: currentTime.minute == 0,
       ));
       currentTime = currentTime.add(const Duration(minutes: 30));
     }
-    // Ensure the very last point is added
     points.add(TimePoint(time: maxTime, isAxis: maxTime.minute == 0));
 
     return points;
@@ -83,6 +114,8 @@ class ScheduleWidget extends StatelessWidget {
 
           return _buildScheduleContent(
               context, schedule, timePoints, ThemeConfig.lightTheme);
+          
+
         } else if (state is ScheduleError) {
           return Center(
               child:
@@ -96,6 +129,9 @@ class ScheduleWidget extends StatelessWidget {
 
   Widget _buildScheduleContent(BuildContext context, TodayScheduleEntity schedule,
       List<TimePoint> timePoints, AppTheme appTheme) {
+    const double timeColumnWidth = 70.0;
+    const double doctorColumnWidth = 280.0;
+
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -104,38 +140,71 @@ class ScheduleWidget extends StatelessWidget {
           ScheduleHead(
             appTheme: appTheme,
             currentDate: DateTime.parse(schedule.date),
-            onChangeDate: (value) {
-              // This logic should be handled by a new event in BLoC if needed
-            },
+            onChangeDate: (value) {},
             onFilter: () {},
             recordsNum: 0,
             addFilter: (String filterType, value) {},
             onToogleFilter: () {},
             filter: ScheduleFilter(),
           ),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ScheduleTimeColumn(
-                    appTheme: appTheme,
-                    sectionHeight: 60,
-                    timePoints: timePoints),
-                for (final doctor
-                    in schedule.doctors.cast<DoctorScheduleModel>())
-                  ScheduleColumn(
-                    key: ValueKey('col-${doctor.id}'),
-                    appTheme: appTheme,
-                    doctorSchedule: doctor,
-                    date: schedule.date, // Передаем дату в дочерний виджет
-                    sectionHeight: 60,
-                    timePoints: timePoints,
-                  ),
-              ],
-            ),
-          )
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final availableWidth = constraints.maxWidth - timeColumnWidth;
+              final newDoctorsPerPage =
+                  max(1, (availableWidth / doctorColumnWidth).floor());
+
+              if (_doctorsPerPage != newDoctorsPerPage) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    setState(() {
+                      _doctorsPerPage = newDoctorsPerPage;
+                      _currentPage = 0;
+                    });
+                    _startTimer(schedule.doctors.length);
+                  }
+                });
+              } else if (_timer == null && schedule.doctors.length > _doctorsPerPage) {
+                 _startTimer(schedule.doctors.length);
+              }
+
+              final totalDoctors = schedule.doctors.length;
+              final startIndex = _currentPage * _doctorsPerPage;
+              
+              if (startIndex >= totalDoctors && totalDoctors > 0) {
+                 _currentPage = 0;
+              }
+
+              final effectiveStartIndex = _currentPage * _doctorsPerPage;
+              final endIndex = min(effectiveStartIndex + _doctorsPerPage, totalDoctors);
+
+              final doctorsToShow = (totalDoctors > 0 && effectiveStartIndex < endIndex)
+                  ? schedule.doctors.sublist(effectiveStartIndex, endIndex)
+                  : <DoctorScheduleEntity>[];
+
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ScheduleTimeColumn(
+                        appTheme: appTheme,
+                        sectionHeight: 60,
+                        timePoints: timePoints),
+                    for (final doctor in doctorsToShow.cast<DoctorScheduleModel>())
+                      ScheduleColumn(
+                        key: ValueKey('col-${doctor.id}'),
+                        appTheme: appTheme,
+                        doctorSchedule: doctor,
+                        date: schedule.date,
+                        sectionHeight: 60,
+                        timePoints: timePoints,
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       ),
     );

@@ -28,7 +28,6 @@ class ScheduleCard extends StatelessWidget {
     }
   }
 
-  // Словарь для отображения статусов на русском языке
   static const Map<String, String> statusToRussian = {
     'busy': 'Занято',
     'free': 'Свободно',
@@ -37,7 +36,6 @@ class ScheduleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Стиль текста - всегда черный, как вы и просили
     final textStyle =
         Theme.of(context).textTheme.bodySmall?.copyWith(color: appTheme.primaryColor);
 
@@ -48,7 +46,7 @@ class ScheduleCard extends StatelessWidget {
         maxHeight: double.infinity,
       ),
       decoration: BoxDecoration(
-        color: _getStatusColor(), // Цвет фона по статусу
+        color: _getStatusColor(),
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
@@ -60,7 +58,6 @@ class ScheduleCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Левая часть: время и номер кабинета
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -72,7 +69,6 @@ class ScheduleCard extends StatelessWidget {
                     ),
                 ],
               ),
-              // Правая часть: статус на русском
               Text(
                 statusToRussian[status] ?? '',
                 style: textStyle,

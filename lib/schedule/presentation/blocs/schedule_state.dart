@@ -1,5 +1,3 @@
-// D:\vs\go\electronicqueue-frontend\lib\schedule\presentation\blocs\schedule_state.dart
-
 part of 'schedule_bloc.dart';
 
 abstract class ScheduleState extends Equatable {
