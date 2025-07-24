@@ -3,8 +3,21 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../widgets/schedule_widget.dart';
 import '../blocs/schedule_bloc.dart';
 
-class SchedulePage extends StatelessWidget {
+class SchedulePage extends StatefulWidget {
   const SchedulePage({super.key});
+
+  @override
+  State<SchedulePage> createState() => _SchedulePageState();
+}
+
+class _SchedulePageState extends State<SchedulePage> {
+
+  @override
+  void initState() {
+    super.initState();
+    // Запускаем подписку на события сразу при инициализации страницы
+    context.read<ScheduleBloc>().add(SubscribeToScheduleUpdates());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,11 +30,11 @@ class SchedulePage extends StatelessWidget {
         listener: (context, state) {
           if (state is ScheduleError) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Ошибка загрузки расписания')),
+              SnackBar(content: Text('Ошибка загрузки расписания: ${state.message}')),
             );
           }
         },
-        child: const ScheduleWidget(),
+        child: ScheduleWidget(),
       ),
     );
   }

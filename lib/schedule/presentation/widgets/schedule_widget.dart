@@ -1,15 +1,12 @@
-import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:elqueue/schedule/data/models/today_schedule_model.dart';
+import 'package:elqueue/schedule/domain/entities/today_schedule_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
-// Импортируются необходимые пакеты для работы с навигацией, состоянием (BLoC), SVG-иконками и темой приложения.
 
 import '../blocs/schedule_bloc.dart';
-
-import '../../domain/entities/booking.dart';
 
 import '../../core/config/theme_config/app_theme.dart';
 import '../../core/config/theme_config/theme_config.dart';
@@ -21,82 +18,84 @@ part 'schedule_head.dart';
 part 'schedule_time_column.dart';
 part 'schedule_info_card.dart';
 
+// Helper classes to replace the old logic
+class TimePoint {
+  final DateTime time;
+  final bool isAxis;
 
-class ScheduleWidget extends StatefulWidget {
-  final Duration? refreshInterval;
-
-  const ScheduleWidget({super.key, this.refreshInterval});
-
-  @override
-  State<ScheduleWidget> createState() => _ScheduleWidgetState();
+  TimePoint({required this.time, required this.isAxis});
 }
 
-class _ScheduleWidgetState extends State<ScheduleWidget> {
-  Timer? _refreshTimer;
+// Dummy class to satisfy ScheduleHead widget requirements, as filtering
+// is not implemented in the provided BLoC.
+class ScheduleFilter {}
 
-  @override
-  void initState() {
-    super.initState();
-    if (widget.refreshInterval != null) {
-      _refreshTimer = Timer.periodic(widget.refreshInterval!, (timer) {
-        if (mounted) {
-          BlocProvider.of<ScheduleBloc>(context).add(RefreshSheduleData());
-        }
-      });
+class ScheduleWidget extends StatelessWidget {
+  const ScheduleWidget({super.key});
+
+  List<TimePoint> _generateTimePoints(
+      String? minTimeStr, String? maxTimeStr, String dateStr) {
+    
+    // --- НАЧАЛО ИЗМЕНЕНИЙ ---
+    // Гарантируем, что используется только часть с датой (YYYY-MM-DD)
+    final dateOnly = dateStr.split('T').first;
+
+    // Default times if not provided, используя очищенную дату
+    final minTime = minTimeStr != null
+        ? DateTime.parse('${dateOnly}T$minTimeStr')
+        : DateTime.parse('${dateOnly}T09:00:00');
+    final maxTime = maxTimeStr != null
+        ? DateTime.parse('${dateOnly}T$maxTimeStr')
+        : DateTime.parse('${dateOnly}T18:00:00');
+    // --- КОНЕЦ ИЗМЕНЕНИЙ ---
+
+    final List<TimePoint> points = [];
+    DateTime currentTime = minTime;
+
+    // Generate points with a 30-minute interval
+    while (currentTime.isBefore(maxTime)) {
+      points.add(TimePoint(
+        time: currentTime,
+        isAxis: currentTime.minute == 0, // Major tick on the hour
+      ));
+      currentTime = currentTime.add(const Duration(minutes: 30));
     }
-  }
+    // Ensure the very last point is added
+    points.add(TimePoint(time: maxTime, isAxis: maxTime.minute == 0));
 
-  @override
-  void dispose() {
-    _refreshTimer?.cancel();
-    super.dispose();
+    return points;
   }
 
   @override
   Widget build(BuildContext context) {
-    final DateTime now = DateTime.now();
     return BlocBuilder<ScheduleBloc, ScheduleState>(
       builder: (context, state) {
-        if (state is ScheduleInit) {
-          BlocProvider.of<ScheduleBloc>(context).add(BuildSchedule(
-              minTimeInterval: Duration(minutes: 5),
-              currentTime: now,
-              startTime: DateTime(now.year, now.month, now.day, 9, 0),
-              endTime: DateTime(now.year, now.month, now.day, 18, 0),
-              timeInterval: const Duration(minutes: 60),
-              scheduleDay: now));
-          // Начальное состояние
-          return const Center(child: Text('Initializing...'));
-        } else if (state is ScheduleLoading) {
-          // Состояние загрузки
+        if (state is ScheduleInitial || state is ScheduleLoading) {
           return const Center(child: CircularProgressIndicator());
         } else if (state is ScheduleLoaded) {
-          // Состояние с данными
-          return _buildScheduleContent(context, state, ThemeConfig.lightTheme);
+          final schedule = state.schedule;
+          final timePoints = _generateTimePoints(
+              schedule.minStartTime, schedule.maxEndTime, schedule.date);
+
+          if (schedule.doctors.isEmpty) {
+            return Center(child: Text('На сегодня расписание отсутствует.'));
+          }
+
+          return _buildScheduleContent(
+              context, schedule, timePoints, ThemeConfig.lightTheme);
         } else if (state is ScheduleError) {
-          // Обработка неизвестных состояний
-          return const Center(child: Text('Error!'));
+          return Center(
+              child:
+                  Text('Не удалось загрузить расписание: ${state.message}'));
         } else {
-          return const Center(child: Text('Unknown State!'));
+          return const Center(child: Text('Произошла неизвестная ошибка.'));
         }
       },
     );
   }
 
-  Widget _buildScheduleContent(
-      BuildContext context, ScheduleLoaded state, AppTheme appTheme) {
-    final recordsNum = _countBottomClasses(state.bookings);
-
-    // 1. Получаем уникальных врачей (по ФИО)
-    final doctors = <String, List<Booking>>{};
-    for (final booking in state.bookings) {
-      final doctor = booking.actor.employeeName ?? 'Неизвестный врач';
-      if (!doctors.containsKey(doctor)) {
-        doctors[doctor] = [];
-      }
-      doctors[doctor]!.add(booking);
-    }
-
+  Widget _buildScheduleContent(BuildContext context, TodayScheduleEntity schedule,
+      List<TimePoint> timePoints, AppTheme appTheme) {
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -104,29 +103,15 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
         children: [
           ScheduleHead(
             appTheme: appTheme,
-            currentDate: state.scheduleDay,
-            onChangeDate: (value) => {
-              BlocProvider.of<ScheduleBloc>(context).add(BuildSchedule(
-                  minTimeInterval: const Duration(minutes: 5),
-                  currentTime: value,
-                  startTime: DateTime(value.year, value.month, value.day, 9, 0),
-                  endTime: DateTime(value.year, value.month, value.day, 18, 0),
-                  timeInterval: const Duration(minutes: 60),
-                  scheduleDay: value))
+            currentDate: DateTime.parse(schedule.date),
+            onChangeDate: (value) {
+              // This logic should be handled by a new event in BLoC if needed
             },
-            onFilter: () {
-              BlocProvider.of<ScheduleBloc>(context).add(FilterSchedule());
-            },
-            recordsNum: recordsNum,
-            addFilter: (String filterType, value) {
-              BlocProvider.of<ScheduleBloc>(context).add(ToogleFilterItem(
-                  filterType: filterType, filterItemValue: value));
-            },
-            onToogleFilter: () {
-              BlocProvider.of<ScheduleBloc>(context).add(ResetFilter());
-              BlocProvider.of<ScheduleBloc>(context).add(FilterSchedule());
-            },
-            filter: state.filter,
+            onFilter: () {},
+            recordsNum: 0,
+            addFilter: (String filterType, value) {},
+            onToogleFilter: () {},
+            filter: ScheduleFilter(),
           ),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -137,31 +122,22 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
                 ScheduleTimeColumn(
                     appTheme: appTheme,
                     sectionHeight: 60,
-                    timePoints: state.timePoints),
-                // Для каждого врача отдельная колонка
-                for (final entry in doctors.entries) ...[
+                    timePoints: timePoints),
+                for (final doctor
+                    in schedule.doctors.cast<DoctorScheduleModel>())
                   ScheduleColumn(
+                    key: ValueKey('col-${doctor.id}'),
                     appTheme: appTheme,
-                    booking: entry.value.first,
+                    doctorSchedule: doctor,
+                    date: schedule.date, // Передаем дату в дочерний виджет
                     sectionHeight: 60,
-                    timePoints: state.timePoints,
+                    timePoints: timePoints,
                   ),
-                ]
               ],
             ),
           )
         ],
       ),
     );
-  }
-
-  int _countBottomClasses(List<Booking> bookings) {
-    int totalCount = 0;
-
-    for (var booking in bookings) {
-      totalCount += booking.bookingEntities.length;
-    }
-
-    return totalCount;
   }
 }
