@@ -24,69 +24,75 @@ class DoctorQueueScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF1F3F4),
-      appBar: AppBar(
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is! AuthSuccess) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const AuthScreen()),
+            (route) => false,
+          );
+        }
+      },
+      child: Scaffold(
         backgroundColor: const Color(0xFFF1F3F4),
-        title: BlocBuilder<AuthBloc, AuthState>(
-          builder: (context, state) {
-            if (state is AuthSuccess) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const Text('Кабинет врача'),
-                  Text(
-                    state.doctor.name, // Используем поле name из Doctor
-                    style: const TextStyle(
-                      fontSize: 25,
-                      fontWeight: FontWeight.normal,
+        appBar: AppBar(
+          backgroundColor: const Color(0xFFF1F3F4),
+          title: BlocBuilder<AuthBloc, AuthState>(
+            builder: (context, state) {
+              if (state is AuthSuccess) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Text('Кабинет врача'),
+                    Text(
+                      state.doctor.name,
+                      style: const TextStyle(
+                        fontSize: 25,
+                        fontWeight: FontWeight.normal,
+                      ),
                     ),
-                  ),
-                ],
-              );
-            }
-            return const Text('Кабинет врача');
-          },
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Выйти',
-            color: Colors.black45,
-            onPressed: () {
-              context.read<AuthBloc>().add(SignOutRequested());
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const AuthScreen()),
-                (Route<dynamic> route) => false,
-              );
+                  ],
+                );
+              }
+              return const Text('Кабинет врача');
             },
           ),
-        ],
-      ),
-      body: BlocProvider(
-        create: (context) {
-          final doctorApi = DoctorApi();
-          final queueDataSource = RemoteQueueDataSource(
-            api: doctorApi,
-            client: http.Client(),
-          );
-          final queueRepository = QueueRepositoryImpl(
-            dataSource: queueDataSource,
-          );
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout),
+              tooltip: 'Выйти',
+              color: Colors.black45,
+              onPressed: () {
+                context.read<AuthBloc>().add(SignOutRequested());
+              },
+            ),
+          ],
+        ),
+        body: BlocProvider(
+          create: (context) {
+            final doctorApi = DoctorApi();
+            final queueDataSource = RemoteQueueDataSource(
+              api: doctorApi,
+              client: http.Client(),
+            );
+            final queueRepository = QueueRepositoryImpl(
+              dataSource: queueDataSource,
+            );
 
-          return QueueBloc(
-            getQueueStatus: GetQueueStatus(queueRepository),
-            startAppointment: StartAppointment(queueRepository),
-            endAppointment: EndAppointment(queueRepository),
-            watchQueueUpdates: WatchQueueUpdates(queueRepository),
-            startBreak: StartBreak(queueRepository),
-            endBreak: EndBreak(queueRepository),
-          )..add(LoadQueueEvent());
-        },
-        child: const Padding(
-          padding: EdgeInsets.all(16.0),
-          child: QueueStatusWidget(),
+            return QueueBloc(
+              getQueueStatus: GetQueueStatus(queueRepository),
+              startAppointment: StartAppointment(queueRepository),
+              endAppointment: EndAppointment(queueRepository),
+              watchQueueUpdates: WatchQueueUpdates(queueRepository),
+              startBreak: StartBreak(queueRepository),
+              endBreak: EndBreak(queueRepository),
+            )..add(LoadQueueEvent());
+          },
+          child: const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: QueueStatusWidget(),
+          ),
         ),
       ),
     );

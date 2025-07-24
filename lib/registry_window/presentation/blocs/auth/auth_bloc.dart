@@ -17,6 +17,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc({required this.authenticateUser, required this.authRepository}) : super(AuthInitial()) {
     on<LoginButtonPressed>(_onLoginButtonPressed);
     on<LogoutRequested>(_onLogoutRequested);
+    on<AuthSessionRestored>(_onAuthSessionRestored);
   }
 
   Future<void> _onLoginButtonPressed(
@@ -46,5 +47,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     await authRepository.logout();
     emit(AuthInitial());
+  }
+
+  void _onAuthSessionRestored(
+    AuthSessionRestored event,
+    Emitter<AuthState> emit,
+  ) {
+    // Просто переводим BLoC в состояние успеха. Данные пользователя нам здесь не важны,
+    // так как окно регистратора их не отображает.
+    emit(AuthSuccess());
   }
 }
