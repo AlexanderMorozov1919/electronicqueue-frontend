@@ -18,10 +18,17 @@ import 'domain/repositories/auth_repository.dart';
 import 'presentation/pages/auth_page.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
 import 'domain/usecases/authenticate_user.dart';
+import 'data/services/auth_token_service.dart';
+import 'presentation/pages/auth_dispatcher.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+
+  // Инициализируем сервис для загрузки токена из хранилища
+  final authTokenService = AuthTokenService();
+  await authTokenService.initialize();
+
   runApp(const MyApp());
 }
 
@@ -43,7 +50,9 @@ class MyApp extends StatelessWidget {
         ),
         RepositoryProvider<AppointmentRepository>(
           create: (context) => AppointmentRepositoryImpl(
-            remoteDataSource: AppointmentRemoteDataSourceImpl(client: httpClient),
+            remoteDataSource: AppointmentRemoteDataSourceImpl(
+              client: httpClient,
+            ),
           ),
         ),
         RepositoryProvider<PatientRepository>(
@@ -56,7 +65,9 @@ class MyApp extends StatelessWidget {
         providers: [
           BlocProvider(
             create: (context) => AuthBloc(
-              authenticateUser: AuthenticateUser(context.read<AuthRepository>()),
+              authenticateUser: AuthenticateUser(
+                context.read<AuthRepository>(),
+              ),
               authRepository: context.read<AuthRepository>(),
             ),
           ),
@@ -71,11 +82,8 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'Кабинет регистратуры',
           theme: ThemeData(primarySwatch: Colors.blue),
-          initialRoute: '/login',
-          routes: {
-            '/login': (context) => LoginPage(),
-            '/main': (context) => const TicketQueuePage(),
-          },
+          // Убираем роуты и используем AuthDispatcher как единственный вход
+          home: const AuthDispatcher(),
         ),
       ),
     );
