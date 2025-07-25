@@ -58,13 +58,22 @@ class CurrentTicketSection extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          ticket.number,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: isActive ? Colors.black : Colors.grey,
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              ticket.number,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: isActive ? Colors.black : Colors.grey,
+              ),
+            ),
+            Text(
+              'Категория: ${ticket.category.name}',
+              style: TextStyle(color: isActive ? Colors.black54 : Colors.grey),
+            ),
+          ],
         ),
         Row(
           children: [
@@ -86,16 +95,16 @@ class CurrentTicketSection extends StatelessWidget {
                 barrierDismissible: false,
                 builder: (_) => MultiBlocProvider(
                   providers: [
-                     BlocProvider.value(value: context.read<AppointmentBloc>()),
-                     BlocProvider.value(value: context.read<TicketBloc>()),
+                    BlocProvider.value(value: context.read<AppointmentBloc>()),
+                    BlocProvider.value(value: context.read<TicketBloc>()),
                   ],
                   child: AppointmentDialog(ticketId: ticket.id),
                 ),
               ).then((isSuccess) {
                 if (isSuccess == true) {
                   context.read<TicketBloc>().add(RegisterCurrentTicketEvent());
-                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Пациент успешно записан!'), backgroundColor: Colors.green),
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Пациент успешно оформлен!'), backgroundColor: Colors.green),
                   );
                 }
               });
@@ -110,7 +119,7 @@ class CurrentTicketSection extends StatelessWidget {
         disabledBackgroundColor: Colors.grey,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
-      child: const Text(AppConstants.registerButton),
+      child: const Text("Оформить"),
     );
   }
 

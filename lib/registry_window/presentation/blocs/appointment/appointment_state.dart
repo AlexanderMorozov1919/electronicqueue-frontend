@@ -16,6 +16,10 @@ class AppointmentState extends Equatable {
   final String? error;
   final bool submissionSuccess;
 
+  // Поля для истории записей
+  final List<AppointmentDetailsEntity> patientAppointments;
+  final bool historyLoading;
+
   AppointmentState({
     this.doctors = const [],
     this.schedule = const [],
@@ -26,6 +30,8 @@ class AppointmentState extends Equatable {
     this.isLoading = false,
     this.error,
     this.submissionSuccess = false,
+    this.patientAppointments = const [],
+    this.historyLoading = false,
   }) : selectedDate = selectedDate ?? DateTime.now();
 
   AppointmentState copyWith({
@@ -41,6 +47,8 @@ class AppointmentState extends Equatable {
     bool clearError = false,
     bool clearDoctor = false,
     bool clearPatient = false,
+    List<AppointmentDetailsEntity>? patientAppointments,
+    bool? historyLoading,
   }) {
     return AppointmentState(
       doctors: doctors ?? this.doctors,
@@ -52,6 +60,8 @@ class AppointmentState extends Equatable {
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : error ?? this.error,
       submissionSuccess: submissionSuccess ?? this.submissionSuccess,
+      patientAppointments: patientAppointments ?? this.patientAppointments,
+      historyLoading: historyLoading ?? this.historyLoading,
     );
   }
 
@@ -65,6 +75,8 @@ class AppointmentState extends Equatable {
         selectedDate,
         isLoading,
         error,
-        submissionSuccess
+        submissionSuccess,
+        patientAppointments,
+        historyLoading,
       ];
 }

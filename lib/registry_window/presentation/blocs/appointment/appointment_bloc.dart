@@ -7,6 +7,7 @@ import '../../../domain/entities/patient_entity.dart';
 import '../../../domain/entities/schedule_slot_entity.dart';
 import '../../../domain/repositories/appointment_repository.dart';
 import '../../../domain/repositories/patient_repository.dart';
+import '../../../domain/entities/appointment_details_entity.dart';
 
 part 'appointment_event.dart';
 part 'appointment_state.dart';
@@ -26,11 +27,15 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
     on<CreatePatient>(_onCreatePatient);
     on<SelectPatient>(_onSelectPatient);
     on<SubmitAppointment>(_onSubmit);
+    on<LoadPatientAppointments>(_onLoadPatientAppointments);
+    on<DeleteAppointment>(_onDeleteAppointment);
+    on<ConfirmAppointment>(_onConfirmAppointment);
+    on<_ClearPatientAppointments>((event, emit) => emit(state.copyWith(patientAppointments: [])));
   }
 
   Future<void> _onLoadInitialData(
       LoadAppointmentInitialData event, Emitter<AppointmentState> emit) async {
-    emit(state.copyWith(isLoading: true, clearError: true, submissionSuccess: false, clearDoctor: true, clearPatient: true, schedule: []));
+    emit(state.copyWith(isLoading: true, clearError: true, submissionSuccess: false, clearDoctor: true, clearPatient: true, schedule: [], patientAppointments: []));
     final doctorsResult = await appointmentRepository.getActiveDoctors();
     doctorsResult.fold(
       (failure) => emit(state.copyWith(isLoading: false, error: failure.message)),
@@ -70,7 +75,10 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
   }
   
   void _onSelectPatient(SelectPatient event, Emitter<AppointmentState> emit) {
-    emit(state.copyWith(selectedPatient: event.patient));
+    if (event.patient == null) {
+      add(const _ClearPatientAppointments());
+    }
+    emit(state.copyWith(selectedPatient: event.patient, clearPatient: event.patient == null));
   }
 
   Future<void> _onInternalLoadSchedule(
@@ -104,6 +112,49 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
         patientId: state.selectedPatient!.id,
         ticketId: event.ticketId);
 
+    result.fold(
+      (failure) => emit(state.copyWith(isLoading: false, error: failure.message)),
+      (_) => emit(state.copyWith(isLoading: false, submissionSuccess: true)),
+    );
+  }
+  
+  Future<void> _onLoadPatientAppointments(
+      LoadPatientAppointments event, Emitter<AppointmentState> emit) async {
+    emit(state.copyWith(historyLoading: true));
+    final result = await appointmentRepository.getPatientAppointments(event.patientId);
+    result.fold(
+      (failure) => emit(state.copyWith(historyLoading: false, error: failure.message)),
+      (appointments) => emit(state.copyWith(historyLoading: false, patientAppointments: appointments)),
+    );
+  }
+
+  Future<void> _onDeleteAppointment(
+    DeleteAppointment event,
+    Emitter<AppointmentState> emit,
+  ) async {
+    emit(state.copyWith(historyLoading: true));
+    final result = await appointmentRepository.deleteAppointment(event.appointmentId);
+    result.fold(
+      (failure) => emit(state.copyWith(historyLoading: false, error: failure.message)),
+      (_) {
+        if (state.selectedPatient != null) {
+          add(LoadPatientAppointments(state.selectedPatient!.id));
+        } else {
+          emit(state.copyWith(historyLoading: false));
+        }
+      },
+    );
+  }
+
+  Future<void> _onConfirmAppointment(
+    ConfirmAppointment event,
+    Emitter<AppointmentState> emit,
+  ) async {
+    emit(state.copyWith(isLoading: true, submissionSuccess: false, clearError: true));
+    final result = await appointmentRepository.confirmAppointment(
+      appointmentId: event.appointmentId,
+      ticketId: event.ticketId,
+    );
     result.fold(
       (failure) => emit(state.copyWith(isLoading: false, error: failure.message)),
       (_) => emit(state.copyWith(isLoading: false, submissionSuccess: true)),
