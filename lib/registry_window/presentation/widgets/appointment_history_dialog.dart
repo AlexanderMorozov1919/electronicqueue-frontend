@@ -83,6 +83,9 @@ class _AppointmentHistoryDialogState extends State<AppointmentHistoryDialog>
           ),
           actions: [
             TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red, 
+              ),
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('Закрыть'),
             ),
