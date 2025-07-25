@@ -24,7 +24,6 @@ class ScheduleTimeColumn extends StatelessWidget {
           for (TimePoint point in timePoints) ...[
             Container(
               height: sectionHeight,
-              // padding: const EdgeInsets.symmetric(vertical: 10),
               child: Align(
                 alignment: Alignment.topRight,
                 child: Text(

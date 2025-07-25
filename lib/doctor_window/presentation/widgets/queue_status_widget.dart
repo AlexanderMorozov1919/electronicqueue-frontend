@@ -152,7 +152,7 @@ class QueueStatusWidget extends StatelessWidget {
                 },
                 child: Text(
                   canEndBreak ? 'Завершить перерыв' : 'Начать перерыв',
-                  style: const TextStyle(fontSize: 29, color: Colors.white),
+                  style: const TextStyle(fontSize: 30, color: Colors.white),
                 ),
               ),
             ),
@@ -183,7 +183,7 @@ class QueueStatusWidget extends StatelessWidget {
               queue.isAppointmentInProgress
                   ? 'Завершить прием'
                   : 'Вызвать следующего пациента',
-              style: const TextStyle(fontSize: 29, color: Colors.white),
+              style: const TextStyle(fontSize: 30, color: Colors.white),
             ),
           ),
         ),
