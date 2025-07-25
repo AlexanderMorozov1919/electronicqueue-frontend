@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../../domain/entities/doctor_entity.dart';
 import '../blocs/appointment/appointment_bloc.dart';
 import 'patient_search_field.dart';
+import 'appointment_history_dialog.dart';
+import '../../domain/entities/appointment_details_entity.dart';
 
 class AppointmentDialog extends StatefulWidget {
   final String ticketId;
@@ -21,9 +23,13 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
   @override
   void initState() {
     super.initState();
-    context.read<AppointmentBloc>().add(LoadAppointmentInitialData());
+    final bloc = context.read<AppointmentBloc>();
+    bloc.add(LoadAppointmentInitialData());
+    if (bloc.state.selectedPatient != null) {
+      bloc.add(LoadPatientAppointments(bloc.state.selectedPatient!.id));
+    }
   }
-  
+
   @override
   void dispose() {
     _patientController.dispose();
@@ -33,6 +39,10 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AppointmentBloc, AppointmentState>(
+      listenWhen: (prev, current) =>
+          prev.selectedPatient != current.selectedPatient ||
+          prev.error != current.error ||
+          prev.submissionSuccess != current.submissionSuccess,
       listener: (context, state) {
         if (state.error != null) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -40,13 +50,15 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
           );
         }
         if (state.submissionSuccess) {
-           Navigator.of(context).pop(true);
+          Navigator.of(context).pop(true);
         }
-        // Обновляем контроллер, если BLoC выбрал/создал пациента
         if (state.selectedPatient != null && _patientController.text != state.selectedPatient!.fullName) {
           _patientController.text = state.selectedPatient!.fullName;
         } else if (state.selectedPatient == null) {
-           _patientController.clear();
+          _patientController.clear();
+        }
+        if (state.selectedPatient != null) {
+          context.read<AppointmentBloc>().add(LoadPatientAppointments(state.selectedPatient!.id));
         }
       },
       builder: (context, state) {
@@ -58,6 +70,23 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
             child: _buildForm(context, state),
           ),
           actions: [
+            ElevatedButton.icon(
+              icon: const Icon(Icons.history),
+              label: const Text('Записи клиента'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+              onPressed: state.selectedPatient == null
+                  ? null
+                  : () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => BlocProvider.value(
+                          value: context.read<AppointmentBloc>(),
+                          child: AppointmentHistoryDialog(patient: state.selectedPatient!),
+                        ),
+                      );
+                    },
+            ),
+            const Spacer(), 
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
               child: const Text('Отмена'),
@@ -66,12 +95,12 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
               onPressed: (state.selectedPatient != null && _selectedSlotId != null && !state.isLoading)
                   ? () {
                       context.read<AppointmentBloc>().add(SubmitAppointment(
-                        scheduleId: _selectedSlotId!,
-                        ticketId: int.parse(widget.ticketId),
-                      ));
+                            scheduleId: _selectedSlotId!,
+                            ticketId: int.parse(widget.ticketId),
+                          ));
                     }
                   : null,
-              child: const Text('Записать'),
+              child: const Text('Создать новую запись'),
             ),
           ],
         );
@@ -80,6 +109,12 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
   }
 
   Widget _buildForm(BuildContext context, AppointmentState state) {
+    final todaysUnconfirmedAppointments = state.patientAppointments
+        .where((a) =>
+            a.date == DateFormat('yyyy-MM-dd').format(DateTime.now()) &&
+            a.ticketNumber == null)
+        .toList();
+
     return Column(
       children: [
         Row(
@@ -94,11 +129,50 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
             Expanded(flex: 2, child: _buildDateSelector(context, state)),
           ],
         ),
-        const SizedBox(height: 16),
+        if (todaysUnconfirmedAppointments.isNotEmpty)
+          _buildConfirmationSection(context, todaysUnconfirmedAppointments),
         const Divider(),
         const SizedBox(height: 16),
         Expanded(child: _buildScheduler(context, state)),
       ],
+    );
+  }
+
+  // Виджет для секции подтверждения явки
+  Widget _buildConfirmationSection(BuildContext context, List<AppointmentDetailsEntity> appointments) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Container(
+        padding: const EdgeInsets.all(8.0),
+        decoration: BoxDecoration(
+          color: Colors.lightBlue.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.blue.shade200)
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('У пациента есть запись на сегодня. Подтвердить явку?', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            ...appointments.map((app) => Card(
+              color: Colors.white,
+              child: ListTile(
+                title: Text('К врачу: ${app.doctorName}'),
+                subtitle: Text('Время: ${app.startTime.substring(0, 5)}'),
+                trailing: ElevatedButton(
+                  child: const Text('Подтвердить'),
+                  onPressed: () {
+                    context.read<AppointmentBloc>().add(ConfirmAppointment(
+                          appointmentId: app.appointmentId,
+                          ticketId: int.parse(widget.ticketId),
+                        ));
+                  },
+                ),
+              ),
+            )),
+          ],
+        ),
+      ),
     );
   }
   

@@ -5,6 +5,7 @@ import '../../core/errors/exceptions.dart';
 import '../../domain/entities/doctor_entity.dart';
 import '../../domain/entities/schedule_slot_entity.dart';
 import '../services/auth_token_service.dart';
+import '../../domain/entities/appointment_details_entity.dart';
 
 abstract class AppointmentRemoteDataSource {
   Future<List<DoctorEntity>> getActiveDoctors();
@@ -14,6 +15,9 @@ abstract class AppointmentRemoteDataSource {
     required int patientId,
     required int ticketId,
   });
+  Future<List<AppointmentDetailsEntity>> getPatientAppointments(int patientId);
+  Future<void> deleteAppointment(int appointmentId);
+  Future<void> confirmAppointment({required int appointmentId, required int ticketId});
 }
 
 class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
@@ -35,7 +39,7 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
   @override
   Future<List<DoctorEntity>> getActiveDoctors() async {
     final response = await client.get(
-      Uri.parse('$_baseUrl/api/doctor/active'), 
+      Uri.parse('$_baseUrl/api/doctor/active'),
       headers: {'Content-Type': 'application/json'},
     );
 
@@ -59,7 +63,7 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
       throw ServerException('Не удалось загрузить расписание');
     }
   }
-  
+
   @override
   Future<void> createAppointment({required int scheduleId, required int patientId, required int ticketId}) async {
     final response = await client.post(
@@ -75,6 +79,47 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
     if (response.statusCode != 201) {
       final errorBody = json.decode(utf8.decode(response.bodyBytes));
       throw ServerException(errorBody['error'] ?? 'Не удалось создать запись');
+    }
+  }
+
+  @override
+  Future<List<AppointmentDetailsEntity>> getPatientAppointments(int patientId) async {
+    final response = await client.get(
+      Uri.parse('$_baseUrl/api/registrar/patients/$patientId/appointments'),
+      headers: _getAuthHeaders(),
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
+      return data.map((json) => AppointmentDetailsEntity.fromJson(json)).toList();
+    } else {
+      throw ServerException('Не удалось загрузить историю записей');
+    }
+  }
+
+  @override
+  Future<void> deleteAppointment(int appointmentId) async {
+    final response = await client.delete(
+      Uri.parse('$_baseUrl/api/registrar/appointments/$appointmentId'),
+      headers: _getAuthHeaders(),
+    );
+
+    if (response.statusCode != 200) {
+      final errorBody = json.decode(utf8.decode(response.bodyBytes));
+      throw ServerException(errorBody['error'] ?? 'Не удалось удалить запись');
+    }
+  }
+
+  @override
+  Future<void> confirmAppointment({required int appointmentId, required int ticketId}) async {
+    final response = await client.patch(
+      Uri.parse('$_baseUrl/api/registrar/appointments/$appointmentId/confirm'),
+      headers: _getAuthHeaders(),
+      body: json.encode({'ticket_id': ticketId}),
+    );
+    if (response.statusCode != 200) {
+      final errorBody = json.decode(utf8.decode(response.bodyBytes));
+      throw ServerException(errorBody['error'] ?? 'Не удалось подтвердить запись');
     }
   }
 }
