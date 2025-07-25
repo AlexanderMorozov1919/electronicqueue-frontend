@@ -63,6 +63,7 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
       },
       builder: (context, state) {
         return AlertDialog(
+          backgroundColor: const Color(0xFFF1F3F4),
           title: const Text('Запись пациента к врачу'),
           content: SizedBox(
             width: MediaQuery.of(context).size.width * 0.8,
@@ -73,7 +74,7 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
             ElevatedButton.icon(
               icon: const Icon(Icons.history),
               label: const Text('Записи клиента'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF415BE7), foregroundColor: Colors.white),
               onPressed: state.selectedPatient == null
                   ? null
                   : () {
@@ -88,10 +89,12 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
             ),
             const Spacer(), 
             TextButton(
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
               onPressed: () => Navigator.of(context).pop(false),
               child: const Text('Отмена'),
             ),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4EB8A6), foregroundColor: Colors.white),
               onPressed: (state.selectedPatient != null && _selectedSlotId != null && !state.isLoading)
                   ? () {
                       context.read<AppointmentBloc>().add(SubmitAppointment(
@@ -160,6 +163,10 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
                 title: Text('К врачу: ${app.doctorName}'),
                 subtitle: Text('Время: ${app.startTime.substring(0, 5)}'),
                 trailing: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4EB8A6),
+                    foregroundColor: Colors.white,
+                  ),
                   child: const Text('Подтвердить'),
                   onPressed: () {
                     context.read<AppointmentBloc>().add(ConfirmAppointment(
@@ -178,20 +185,29 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
   
   Widget _buildPatientSelector(BuildContext context, AppointmentState state) {
     final bloc = context.read<AppointmentBloc>();
-    return PatientSearchField(
-      controller: _patientController,
-      onPatientSelected: (patient) {
-        bloc.add(SelectPatient(patient));
-      },
-      onPatientCleared: () {
-        bloc.add(const SelectPatient(null));
-      },
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 0.0),
+        child: PatientSearchField(
+          controller: _patientController,
+          onPatientSelected: (patient) {
+            bloc.add(SelectPatient(patient));
+          },
+          onPatientCleared: () {
+            bloc.add(const SelectPatient(null));
+          },
+        ),
+      ),
     );
   }
 
    Widget _buildDoctorSelector(BuildContext context, AppointmentState state) {
     return DropdownButtonFormField<DoctorEntity?>(
-      decoration: const InputDecoration(labelText: 'Врач', border: OutlineInputBorder()),
+      dropdownColor: Colors.white,
+      decoration: const InputDecoration(labelText: 'Врач', border: OutlineInputBorder(), fillColor: Colors.white, filled: true),
       value: state.selectedDoctor,
       isExpanded: true,
       items: [
@@ -226,7 +242,7 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
         labelText: 'Специализация',
         border: const OutlineInputBorder(),
         filled: true,
-        fillColor: Colors.grey[200],
+        fillColor: Colors.white,
       ),
       controller: TextEditingController(text: state.selectedDoctor?.specialization ?? ''),
     );
@@ -240,6 +256,20 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
           initialDate: state.selectedDate,
           firstDate: DateTime.now().subtract(const Duration(days: 30)),
           lastDate: DateTime.now().add(const Duration(days: 30)),
+          builder: (context, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: const ColorScheme.light(
+                  primary: const Color(0xFF415BE7),
+                  onPrimary: Colors.white, 
+                  surface: Colors.white, 
+                  onSurface: Colors.black,
+                ),
+                dialogBackgroundColor: Colors.white,
+              ),
+              child: child!,
+            );
+          }
         );
         if (picked != null && picked != state.selectedDate) {
           context.read<AppointmentBloc>().add(AppointmentDateChanged(picked));
@@ -247,7 +277,7 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
         }
       },
       child: InputDecorator(
-        decoration: const InputDecoration(labelText: 'Дата', border: OutlineInputBorder()),
+        decoration: const InputDecoration(labelText: 'Дата', border: OutlineInputBorder(), fillColor: Colors.white, filled: true),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -287,7 +317,7 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
           child: ChoiceChip(
             label: Text(DateFormat('HH:mm').format(slot.startTime)),
             selected: isSelected,
-            selectedColor: Theme.of(context).primaryColor,
+            selectedColor: const Color(0xFF415BE7),
             labelStyle: TextStyle(
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 color: isSelected ? Colors.white : Colors.black),

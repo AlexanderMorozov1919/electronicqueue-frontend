@@ -53,6 +53,7 @@ class _AppointmentHistoryDialogState extends State<AppointmentHistoryDialog>
         });
 
         return AlertDialog(
+          backgroundColor: const Color(0xFFF1F3F4),
           title: Text('История записей: ${widget.patient.fullName}'),
           content: SizedBox(
             width: MediaQuery.of(context).size.width * 0.8,
@@ -101,6 +102,7 @@ class _AppointmentHistoryDialogState extends State<AppointmentHistoryDialog>
       itemBuilder: (context, index) {
         final appointment = appointments[index];
         return Card(
+          color: Colors.white,
           margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
           child: ListTile(
             leading: Column(

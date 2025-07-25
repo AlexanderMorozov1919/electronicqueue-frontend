@@ -6,7 +6,6 @@ import 'data/repositories/auth_repository_impl.dart';
 import 'data/services/auth_service.dart';
 import 'domain/usecases/sign_in.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
-import 'presentation/pages/auth_page.dart';
 import 'presentation/pages/auth_dispatcher.dart';
 
 void main() async {

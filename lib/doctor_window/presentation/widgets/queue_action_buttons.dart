@@ -18,7 +18,7 @@ class QueueActionButtons extends StatelessWidget {
     final bool canStartBreak = !queue.isAppointmentInProgress && !queue.isOnBreak;
     final bool canEndBreak = queue.isOnBreak;
 
-    return Row(
+    return Column(
       children: [
         if (canStartBreak || canEndBreak)
           _buildBreakButton(context, canEndBreak),
