@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../../../config/app_config.dart';
 import '../../core/errors/exceptions.dart';
 import '../../core/utils/ticket_category.dart';
+import '../../domain/entities/daily_report_row_entity.dart';
 import '../../domain/entities/ticket_entity.dart';
 import '../models/ticket_model.dart';
 import 'ticket_data_source.dart';
@@ -21,10 +22,25 @@ class TicketRemoteDataSourceImpl implements TicketDataSource {
       throw ServerException('Пользователь не авторизован');
     }
     return {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json; charset=UTF-8',
       'Authorization': 'Bearer $token',
     };
   }
+
+  @override
+  Future<List<DailyReportRowEntity>> getDailyReport() async {
+    final uri = Uri.parse('$_baseUrl/api/registrar/reports/daily');
+    final response = await client.get(uri, headers: _getAuthHeaders());
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
+      return data.map((json) => DailyReportRowEntity.fromJson(json)).toList();
+    } else {
+      final errorBody = json.decode(utf8.decode(response.bodyBytes));
+      throw ServerException(errorBody['error'] ?? 'Не удалось загрузить отчет');
+    }
+  }
+
 
   @override
   Future<TicketEntity> callNextTicket(int windowNumber) async {
