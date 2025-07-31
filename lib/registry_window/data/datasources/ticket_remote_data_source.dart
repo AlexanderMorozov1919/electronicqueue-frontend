@@ -67,30 +67,47 @@ class TicketRemoteDataSourceImpl implements TicketDataSource {
   Future<List<TicketEntity>> getTicketsByCategory(
     TicketCategory category,
   ) async {
-    String letterPrefix;
-    switch (category) {
-      case TicketCategory.byAppointment:
-        letterPrefix = 'A%';
-        break;
-      case TicketCategory.makeAppointment:
-        letterPrefix = 'B%';
-        break;
-      case TicketCategory.tests:
-        letterPrefix = 'C%';
-        break;
-      case TicketCategory.other:
-        letterPrefix = 'D%';
-        break;
+    // Устанавливаем базовое условие для фильтрации по статусам
+    final List<Map<String, dynamic>> conditions = [
+      {
+        "field": "status",
+        "operator": "IN",
+        "value": ["ожидает", "зарегистрирован", "завершен"]
+      }
+    ];
+
+    // Добавляем фильтр по категории, если выбрана не "Все категории"
+    if (category != TicketCategory.all) {
+      String letterPrefix = '';
+      switch (category) {
+        case TicketCategory.byAppointment:
+          letterPrefix = 'A%';
+          break;
+        case TicketCategory.makeAppointment:
+          letterPrefix = 'B%';
+          break;
+        case TicketCategory.tests:
+          letterPrefix = 'C%';
+          break;
+        case TicketCategory.other:
+          letterPrefix = 'D%';
+          break;
+        case TicketCategory.all:
+          break;
+      }
+      conditions.add({
+        "field": "ticket_number",
+        "operator": "LIKE",
+        "value": letterPrefix,
+      });
     }
 
     final requestBody = {
       "page": 1,
-      "limit": 100,
+      "limit": 1000, // Лимит для получения всех нужных талонов
       "filters": {
         "logical_operator": "AND",
-        "conditions": [
-          {"field": "ticket_number", "operator": "LIKE", "value": letterPrefix},
-        ],
+        "conditions": conditions,
       },
     };
 
