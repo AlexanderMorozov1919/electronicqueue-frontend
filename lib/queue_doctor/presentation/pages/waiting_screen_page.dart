@@ -56,6 +56,7 @@ class _WaitingScreenPageState extends State<WaitingScreenPage> {
 
           if (state is DoctorQueueLoaded) {
             final entity = state.queueEntity;
+            final doctorStatus = entity.doctorStatus;
             final inProgressTickets =
                 entity.queue.where((t) => t.status == 'на_приеме').toList();
             final waitingTickets =
@@ -67,8 +68,9 @@ class _WaitingScreenPageState extends State<WaitingScreenPage> {
                   cabinetNumber: entity.cabinetNumber.toString(),
                   doctorName: entity.doctorName,
                   specialty: entity.doctorSpecialty,
+                  doctorStatus: doctorStatus,
                 ),
-                _buildQueueStatusHeader(),
+                _buildQueueStatusHeader(doctorStatus: doctorStatus),
                 Expanded(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,12 +106,13 @@ class _WaitingScreenPageState extends State<WaitingScreenPage> {
                 cabinetNumber: widget.cabinetNumber.toString(),
                 doctorName: "Загрузка...",
                 specialty: "Пожалуйста, подождите",
+                doctorStatus: 'неактивен', // Статус по умолчанию при загрузке
               ),
-              _buildQueueStatusHeader(),
+              _buildQueueStatusHeader(doctorStatus: 'неактивен'), // Статус по умолчанию
               const Expanded(
                 child: Center(
                   child: CircularProgressIndicator(
-                    color: Color(0xFF667EEA),
+                    color: Color(0xFF1B4193),
                     strokeWidth: 3,
                   ),
                 ),
@@ -283,71 +286,60 @@ class _WaitingScreenPageState extends State<WaitingScreenPage> {
     );
   }
 
-  // --- Остальные виджеты остаются без изменений ---
+  // --- Остальные виджеты ---
 
   Widget _buildNewHeader({
     required String cabinetNumber,
     required String doctorName,
     required String specialty,
+    required String doctorStatus,
   }) {
+    final bool isOnBreak = doctorStatus == 'перерыв';
+
+    final gradientColors = isOnBreak
+        ? [const Color(0xFFF97316), const Color(0xFFEA580C)] // Orange
+        : [const Color(0xFF1B4193), const Color(0xFF2563EB), const Color(0xFF3B82F6)]; // Blue
+
+    final shadowColor = isOnBreak ? const Color(0xFFF97316) : const Color(0xFF1B4193);
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            const Color(0xFF667EEA),
-            const Color(0xFF764BA2),
-          ],
+          colors: gradientColors,
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF667EEA).withOpacity(0.3),
+            color: shadowColor,
             blurRadius: 20,
             offset: const Offset(0, 10),
             spreadRadius: -5,
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.white.withOpacity(0.2),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                  spreadRadius: -8,
-                ),
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-              // Эффект матового стекла
-              backgroundBlendMode: BlendMode.overlay,
-            ),
-            child: Container(
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                // Дополнительный эффект свечения
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.white.withOpacity(0.1),
-                    blurRadius: 10,
-                    spreadRadius: -2,
-                    offset: const Offset(0, 0),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                    spreadRadius: -5,
                   ),
                 ],
               ),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     'Кабинет',
@@ -388,71 +380,88 @@ class _WaitingScreenPageState extends State<WaitingScreenPage> {
                 ],
               ),
             ),
-          ),
-          const SizedBox(width: 32),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
-                // Эффект матового стекла для текста врача
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.white.withOpacity(0.1),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                    spreadRadius: -5,
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    doctorName,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 36,
-                      fontWeight: FontWeight.w600,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withOpacity(0.3),
-                          offset: const Offset(0, 2),
-                          blurRadius: 4,
-                        ),
-                      ],
+            const SizedBox(width: 32),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.1),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                      spreadRadius: -5,
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    specialty,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 24,
-                      fontWeight: FontWeight.w400,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withOpacity(0.2),
-                          offset: const Offset(0, 1),
-                          blurRadius: 2,
-                        ),
-                      ],
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      doctorName,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 36,
+                        fontWeight: FontWeight.w600,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.3),
+                            offset: const Offset(0, 2),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      specialty,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 24,
+                        fontWeight: FontWeight.w400,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.2),
+                            offset: const Offset(0, 1),
+                            blurRadius: 2,
+                          ),
+                        ],
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildQueueStatusHeader() {
+  Widget _buildQueueStatusHeader({required String doctorStatus}) {
+    final bool isOnBreak = doctorStatus == 'перерыв';
+    
+    // Левая часть
+    final leftHeaderGradient = isOnBreak
+        ? [const Color(0xFFF97316), const Color(0xFFEA580C)] // Orange
+        : [const Color(0xFF1B4193), const Color(0xFF2563EB), const Color(0xFF3B82F6)]; // Blue
+    final leftHeaderShadow = isOnBreak ? const Color(0xFFF97316) : const Color(0xFF1B4193);
+
+    // Правая часть
+    final String rightHeaderText = isOnBreak ? 'НА ПЕРЕРЫВЕ' : 'ИДЁТ ПРИЁМ';
+    final rightHeaderGradient = isOnBreak
+        ? [const Color(0xFFEF4444), const Color(0xFFDC2626)] // Red
+        : [const Color(0xFF4CAF50), const Color(0xFF43A047)]; // Green
+    final rightHeaderShadow = isOnBreak 
+        ? const Color(0xFFEF4444).withOpacity(0.4)
+        : const Color(0xFFFFC107).withOpacity(0.4);
+
     return Container(
       height: 50,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -460,7 +469,7 @@ class _WaitingScreenPageState extends State<WaitingScreenPage> {
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF667EEA).withOpacity(0.3),
+            color: leftHeaderShadow,
             blurRadius: 15,
             offset: const Offset(0, 8),
             spreadRadius: -3,
@@ -479,28 +488,17 @@ class _WaitingScreenPageState extends State<WaitingScreenPage> {
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFF667EEA),
-                    const Color(0xFF5B6BC0),
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                  colors: leftHeaderGradient,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
                 borderRadius: const BorderRadius.horizontal(
                   left: Radius.circular(25),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF667EEA).withOpacity(0.4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 0),
-                    spreadRadius: -2,
-                  ),
-                ],
               ),
               child: Center(
                 child: Text(
-                  'В очереди',
+                  'В ОЧЕРЕДИ',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -522,19 +520,16 @@ class _WaitingScreenPageState extends State<WaitingScreenPage> {
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFFFFD54F),
-                    const Color(0xFFFFC107),
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                  colors: rightHeaderGradient,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
                 borderRadius: const BorderRadius.horizontal(
                   right: Radius.circular(25),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFFFC107).withOpacity(0.4),
+                    color: rightHeaderShadow,
                     blurRadius: 8,
                     offset: const Offset(0, 0),
                     spreadRadius: -2,
@@ -543,7 +538,7 @@ class _WaitingScreenPageState extends State<WaitingScreenPage> {
               ),
               child: Center(
                 child: Text(
-                  'Идёт приём',
+                  rightHeaderText,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
