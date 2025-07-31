@@ -5,6 +5,7 @@ import 'package:elqueue/registry_window/data/repositories/patient_repository_imp
 import 'package:elqueue/registry_window/domain/repositories/appointment_repository.dart';
 import 'package:elqueue/registry_window/domain/repositories/patient_repository.dart';
 import 'package:elqueue/registry_window/presentation/blocs/appointment/appointment_bloc.dart';
+import 'package:elqueue/registry_window/presentation/blocs/report/report_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -73,6 +74,12 @@ class MyApp extends StatelessWidget {
             create: (context) => AppointmentBloc(
               appointmentRepository: context.read<AppointmentRepository>(),
               patientRepository: context.read<PatientRepository>(),
+            ),
+          ),
+          // НОВАЯ РЕГИСТРАЦИЯ BLOC
+          BlocProvider(
+            create: (context) => ReportBloc(
+              ticketRepository: context.read<TicketRepository>(),
             ),
           ),
         ],

@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
-import '../../core/errors/exceptions.dart'; 
+import '../../core/errors/exceptions.dart';
 import '../../core/errors/failures.dart';
+import '../../domain/entities/daily_report_row_entity.dart';
 import '../../domain/repositories/ticket_repository.dart';
 import '../../domain/entities/ticket_entity.dart';
 import '../datasources/ticket_data_source.dart';
@@ -10,6 +11,18 @@ class TicketRepositoryImpl implements TicketRepository {
   final TicketDataSource remoteDataSource;
 
   TicketRepositoryImpl({required this.remoteDataSource});
+
+  @override
+  Future<Either<Failure, List<DailyReportRowEntity>>> getDailyReport() async {
+    try {
+      final report = await remoteDataSource.getDailyReport();
+      return Right(report);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Непредвиденная ошибка при получении отчета'));
+    }
+  }
 
   @override
   Future<Either<Failure, TicketEntity>> callNextTicket(int windowNumber) async {
@@ -28,7 +41,7 @@ class TicketRepositoryImpl implements TicketRepository {
     try {
       await remoteDataSource.updateTicketStatus(ticketId, 'зарегистрирован');
       return const Right(null);
-    } on ServerException catch (e) { 
+    } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     }
   }
@@ -38,7 +51,7 @@ class TicketRepositoryImpl implements TicketRepository {
     try {
       await remoteDataSource.updateTicketStatus(ticketId, 'завершен');
       return const Right(null);
-    } on ServerException catch (e) { 
+    } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     }
   }
@@ -69,7 +82,7 @@ class TicketRepositoryImpl implements TicketRepository {
     try {
       final tickets = await remoteDataSource.getTickets();
       return Right(tickets);
-    } on ServerException catch (e) { 
+    } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     }
   }
