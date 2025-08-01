@@ -15,10 +15,26 @@ class _DailyReportDialogState extends State<DailyReportDialog> {
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
 
+  // 1. Declare ScrollControllers
+  late final ScrollController _verticalScrollController;
+  late final ScrollController _horizontalScrollController;
+
   @override
   void initState() {
     super.initState();
     context.read<ReportBloc>().add(LoadDailyReport());
+
+    // 2. Initialize ScrollControllers
+    _verticalScrollController = ScrollController();
+    _horizontalScrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    // 3. Dispose of ScrollControllers
+    _verticalScrollController.dispose();
+    _horizontalScrollController.dispose();
+    super.dispose();
   }
 
   void _applyFilters() {
@@ -181,13 +197,18 @@ class _DailyReportDialogState extends State<DailyReportDialog> {
       return const Center(child: Text('Нет данных для отображения.'));
     }
 
+    // 4. Assign the controllers to the widgets
     return Scrollbar(
       thumbVisibility: true,
+      controller: _verticalScrollController, // Assign vertical controller
       child: SingleChildScrollView(
+        controller: _verticalScrollController, // Assign vertical controller
         scrollDirection: Axis.vertical,
         child: Scrollbar(
           thumbVisibility: true,
+          controller: _horizontalScrollController, // Assign horizontal controller
           child: SingleChildScrollView(
+            controller: _horizontalScrollController, // Assign horizontal controller
             scrollDirection: Axis.horizontal,
             child: DataTable(
               sortColumnIndex: state.sortColumnIndex,
@@ -196,9 +217,7 @@ class _DailyReportDialogState extends State<DailyReportDialog> {
                 DataColumn(label: const Text('Номер талона'), onSort: (i, a) => _onSort(context, i, a)),
                 DataColumn(label: const Text('ФИО пациента'), onSort: (i, a) => _onSort(context, i, a)),
                 DataColumn(label: const Text('ФИО врача'), onSort: (i, a) => _onSort(context, i, a)),
-                // ИЗМЕНЕНИЕ: Добавлен onSort
                 DataColumn(label: const Text('Специализация'), onSort: (i, a) => _onSort(context, i, a)),
-                // ИЗМЕНЕНИЕ: Добавлен onSort
                 DataColumn(label: const Text('Кабинет'), onSort: (i, a) => _onSort(context, i, a)),
                 DataColumn(label: const Text('Время приема'), onSort: (i, a) => _onSort(context, i, a)),
                 DataColumn(label: const Text('Статус'), onSort: (i, a) => _onSort(context, i, a)),
