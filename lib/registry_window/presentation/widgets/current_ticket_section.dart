@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/constants/app_constans.dart';
+import '../../domain/repositories/appointment_repository.dart';
+import '../../domain/repositories/patient_repository.dart';
 import '../blocs/appointment/appointment_bloc.dart';
 import '../blocs/ticket/ticket_state.dart';
 import '../blocs/ticket/ticket_event.dart';
@@ -93,10 +95,20 @@ class CurrentTicketSection extends StatelessWidget {
               showDialog<bool>(
                 context: context,
                 barrierDismissible: false,
-                builder: (_) => MultiBlocProvider(
+                // ИЗМЕНЕНИЕ: Создаем новый, изолированный BLoC для диалогового окна
+                builder: (dialogContext) => MultiBlocProvider(
                   providers: [
-                    BlocProvider.value(value: context.read<AppointmentBloc>()),
-                    BlocProvider.value(value: context.read<TicketBloc>()),
+                    // Создаем свежий экземпляр AppointmentBloc специально для этого диалога
+                    BlocProvider(
+                      create: (context) => AppointmentBloc(
+                        appointmentRepository: context.read<AppointmentRepository>(),
+                        patientRepository: context.read<PatientRepository>(),
+                      )..add(const LoadAppointmentInitialData()), // Сразу запускаем загрузку данных
+                    ),
+                    // Передаем существующий TicketBloc, чтобы он был доступен внутри диалога, если понадобится
+                    BlocProvider.value(
+                      value: BlocProvider.of<TicketBloc>(context),
+                    ),
                   ],
                   child: AppointmentDialog(ticketId: ticket.id),
                 ),
