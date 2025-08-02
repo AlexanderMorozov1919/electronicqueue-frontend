@@ -23,8 +23,8 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
   @override
   void initState() {
     super.initState();
+    // Данные теперь загружаются при создании BLoC, поэтому этот вызов здесь не нужен.
     final bloc = context.read<AppointmentBloc>();
-    bloc.add(LoadAppointmentInitialData());
     if (bloc.state.selectedPatient != null) {
       bloc.add(LoadPatientAppointments(bloc.state.selectedPatient!.id));
     }
@@ -70,7 +70,11 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
             height: MediaQuery.of(context).size.height * 0.75,
             child: _buildForm(context, state),
           ),
+          // *** НАЧАЛО ИСПРАВЛЕНИЯ ***
+          // Используем actionsAlignment для расположения элементов и избавляемся от Spacer.
+          actionsAlignment: MainAxisAlignment.spaceBetween,
           actions: [
+            // Первый элемент (кнопка "Записи клиента") будет слева.
             ElevatedButton.icon(
               icon: const Icon(Icons.history),
               label: const Text('Записи клиента'),
@@ -87,25 +91,32 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
                       );
                     },
             ),
-            const Spacer(), 
-            TextButton(
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Отмена'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4EB8A6), foregroundColor: Colors.white),
-              onPressed: (state.selectedPatient != null && _selectedSlotId != null && !state.isLoading)
-                  ? () {
-                      context.read<AppointmentBloc>().add(SubmitAppointment(
-                            scheduleId: _selectedSlotId!,
-                            ticketId: int.parse(widget.ticketId),
-                          ));
-                    }
-                  : null,
-              child: const Text('Создать новую запись'),
+            // Второй элемент (группа кнопок) будет справа.
+            Row(
+              mainAxisSize: MainAxisSize.min, // Чтобы Row не занимал все доступное место
+              children: [
+                TextButton(
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Отмена'),
+                ),
+                const SizedBox(width: 8), // Используем SizedBox для отступа
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4EB8A6), foregroundColor: Colors.white),
+                  onPressed: (state.selectedPatient != null && _selectedSlotId != null && !state.isLoading)
+                      ? () {
+                          context.read<AppointmentBloc>().add(SubmitAppointment(
+                                scheduleId: _selectedSlotId!,
+                                ticketId: int.parse(widget.ticketId),
+                              ));
+                        }
+                      : null,
+                  child: const Text('Создать новую запись'),
+                ),
+              ],
             ),
           ],
+          // *** КОНЕЦ ИСПРАВЛЕНИЯ ***
         );
       },
     );
@@ -260,7 +271,7 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
             return Theme(
               data: Theme.of(context).copyWith(
                 colorScheme: const ColorScheme.light(
-                  primary: const Color(0xFF415BE7),
+                  primary: Color(0xFF415BE7),
                   onPrimary: Colors.white, 
                   surface: Colors.white, 
                   onSurface: Colors.black,
