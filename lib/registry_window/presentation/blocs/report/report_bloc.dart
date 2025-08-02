@@ -49,6 +49,16 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
 
     final sortedRows = List<DailyReportRowEntity>.from(state.displayedRows);
 
+    TimeOfDay? _parseTime(String? timeString) {
+      if (timeString == null) return null;
+      try {
+        final parts = timeString.split(':');
+        return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      } catch (e) {
+        return null;
+      }
+    }
+
     sortedRows.sort((a, b) {
       int comparison;
       switch (newSortColumnIndex) {
@@ -72,8 +82,21 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
         case 4: // Cabinet (как число)
           comparison = (a.cabinetNumber ?? 0).compareTo(b.cabinetNumber ?? 0);
           break;
-        case 5: // Time
-          comparison = (a.appointmentTime ?? '').compareTo(b.appointmentTime ?? '');
+        case 5:
+          final timeA = _parseTime(a.appointmentTime);
+          final timeB = _parseTime(b.appointmentTime);
+          
+          if (timeA == null && timeB == null) {
+            comparison = 0;
+          } else if (timeA == null) {
+            comparison = -1; // null значения в начале
+          } else if (timeB == null) {
+            comparison = 1;
+          } else {
+            final aDouble = timeA.hour + timeA.minute / 60.0;
+            final bDouble = timeB.hour + timeB.minute / 60.0;
+            comparison = aDouble.compareTo(bDouble);
+          }
           break;
         case 6: // Status
           comparison = a.status.compareTo(b.status);
