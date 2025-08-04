@@ -10,6 +10,8 @@ class TicketModel extends TicketEntity {
     required super.status,
     super.isRegistered,
     super.isCompleted,
+    super.calledAt,
+    super.completedAt,
   });
 
   factory TicketModel.fromJson(Map<String, dynamic> json) {
@@ -31,6 +33,12 @@ class TicketModel extends TicketEntity {
       number: ticketNumber,
       category: determineCategory(ticketNumber),
       createdAt: DateTime.parse(json['created_at'] as String),
+      calledAt: json['called_at'] != null
+          ? DateTime.parse(json['called_at'] as String)
+          : null,
+      completedAt: json['completed_at'] != null
+          ? DateTime.parse(json['completed_at'] as String)
+          : null,
       status: status,
       isRegistered: status == 'зарегистрирован',
       isCompleted: status == 'завершен',
@@ -43,6 +51,8 @@ class TicketModel extends TicketEntity {
       'ticket_number': number,
       'category': category.name,
       'created_at': createdAt.toIso8601String(),
+      'called_at': calledAt?.toIso8601String(),
+      'completed_at': completedAt?.toIso8601String(),
       'status': status,
     };
   }

@@ -8,6 +8,9 @@ class DailyReportRowEntity extends Equatable {
   final int? cabinetNumber;
   final String? appointmentTime;
   final String status;
+  final DateTime? calledAt;
+  final DateTime? completedAt;
+  final String? duration;
 
   const DailyReportRowEntity({
     required this.ticketNumber,
@@ -17,6 +20,9 @@ class DailyReportRowEntity extends Equatable {
     this.cabinetNumber,
     this.appointmentTime,
     required this.status,
+    this.calledAt,
+    this.completedAt,
+    this.duration,
   });
 
   factory DailyReportRowEntity.fromJson(Map<String, dynamic> json) {
@@ -45,6 +51,9 @@ class DailyReportRowEntity extends Equatable {
       cabinetNumber: json['cabinet_number'] as int?,
       appointmentTime: json['appointment_time'] as String?,
       status: translatedStatus,
+      calledAt: json['called_at'] != null ? DateTime.parse(json['called_at']) : null,
+      completedAt: json['completed_at'] != null ? DateTime.parse(json['completed_at']) : null,
+      duration: json['duration'] as String?,
     );
   }
 
@@ -57,5 +66,8 @@ class DailyReportRowEntity extends Equatable {
         cabinetNumber,
         appointmentTime,
         status,
+        calledAt,
+        completedAt,
+        duration,
       ];
 }
