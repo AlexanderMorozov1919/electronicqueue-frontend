@@ -41,13 +41,19 @@ class TicketRemoteDataSourceImpl implements TicketDataSource {
     }
   }
 
-
   @override
-  Future<TicketEntity> callNextTicket(int windowNumber) async {
+  Future<TicketEntity> callNextTicket(int windowNumber, String? categoryPrefix) async {
+    final body = <String, dynamic>{
+      'window_number': windowNumber,
+    };
+    if (categoryPrefix != null && categoryPrefix.isNotEmpty) {
+      body['category_prefix'] = categoryPrefix;
+    }
+
     final response = await client.post(
       Uri.parse('$_baseUrl/api/registrar/call-next'),
       headers: _getAuthHeaders(),
-      body: json.encode({'window_number': windowNumber}),
+      body: json.encode(body),
     );
 
     if (response.statusCode == 200) {
@@ -60,6 +66,26 @@ class TicketRemoteDataSourceImpl implements TicketDataSource {
       throw ServerException(
         errorBody['error'] ?? 'Ошибка вызова следующего талона',
       );
+    }
+  }
+
+  @override
+  Future<TicketEntity> callSpecificTicket(String ticketId, int windowNumber) async {
+    final response = await client.post(
+      Uri.parse('$_baseUrl/api/registrar/call-specific'),
+      headers: _getAuthHeaders(),
+      body: json.encode({
+        'ticket_id': int.parse(ticketId),
+        'window_number': windowNumber,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = json.decode(utf8.decode(response.bodyBytes));
+      return TicketModel.fromJson(decoded);
+    } else {
+      final errorBody = json.decode(utf8.decode(response.bodyBytes));
+      throw ServerException(errorBody['error'] ?? 'Ошибка вызова конкретного талона');
     }
   }
 
@@ -83,10 +109,10 @@ class TicketRemoteDataSourceImpl implements TicketDataSource {
   Future<List<TicketEntity>> getTicketsByCategory(TicketCategory category) async {
     String categoryPrefix = '';
     switch (category) {
-      case TicketCategory.byAppointment:
+      case TicketCategory.makeAppointment:
         categoryPrefix = 'A';
         break;
-      case TicketCategory.makeAppointment:
+      case TicketCategory.byAppointment:
         categoryPrefix = 'B';
         break;
       case TicketCategory.tests:
@@ -103,7 +129,7 @@ class TicketRemoteDataSourceImpl implements TicketDataSource {
     if (categoryPrefix.isNotEmpty) {
       queryParams['category'] = categoryPrefix;
     }
-    
+
     final uri = Uri.parse('$_baseUrl/api/registrar/tickets').replace(queryParameters: queryParams);
 
     final response = await client.get(

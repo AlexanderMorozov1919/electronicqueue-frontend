@@ -16,9 +16,17 @@ import 'domain/repositories/ticket_repository.dart';
 import 'data/repositories/auth_repository_impl.dart';
 import 'domain/repositories/auth_repository.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
+import 'presentation/blocs/ticket/ticket_bloc.dart';
 import 'domain/usecases/authenticate_user.dart';
+import 'domain/usecases/call_next_ticket.dart';
+import 'domain/usecases/call_specific_ticket.dart';
+import 'domain/usecases/complete_current_ticket.dart';
+import 'domain/usecases/get_current_ticket.dart';
+import 'domain/usecases/get_tickets_by_category.dart';
+import 'domain/usecases/register_current_ticket.dart';
 import 'data/services/auth_token_service.dart';
 import 'presentation/pages/auth_dispatcher.dart';
+import 'presentation/pages/ticket_queue_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -71,6 +79,28 @@ class MyApp extends StatelessWidget {
             ),
           ),
           BlocProvider(
+            create: (context) => TicketBloc(
+              callNextTicket: CallNextTicket(
+                RepositoryProvider.of<TicketRepository>(context),
+              ),
+              callSpecificTicket: CallSpecificTicket(
+                RepositoryProvider.of<TicketRepository>(context),
+              ),
+              registerCurrentTicket: RegisterCurrentTicket(
+                RepositoryProvider.of<TicketRepository>(context),
+              ),
+              completeCurrentTicket: CompleteCurrentTicket(
+                RepositoryProvider.of<TicketRepository>(context),
+              ),
+              getCurrentTicket: GetCurrentTicket(
+                RepositoryProvider.of<TicketRepository>(context),
+              ),
+              getTicketsByCategory: GetTicketsByCategory(
+                RepositoryProvider.of<TicketRepository>(context),
+              ),
+            ),
+          ),
+          BlocProvider(
             create: (context) => AppointmentBloc(
               appointmentRepository: context.read<AppointmentRepository>(),
               patientRepository: context.read<PatientRepository>(),
@@ -88,6 +118,10 @@ class MyApp extends StatelessWidget {
           title: 'Кабинет регистратуры',
           theme: ThemeData(primarySwatch: Colors.blue),
           home: const AuthDispatcher(),
+          routes: {
+            '/login': (context) => const AuthDispatcher(),
+            '/main': (context) => const TicketQueuePage(),
+          },
         ),
       ),
     );

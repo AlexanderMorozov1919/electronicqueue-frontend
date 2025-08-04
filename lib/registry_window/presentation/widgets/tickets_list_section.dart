@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/ticket/ticket_state.dart';
 import '../blocs/ticket/ticket_bloc.dart';
+import '../blocs/ticket/ticket_event.dart';
 
 class TicketsListSection extends StatelessWidget {
   const TicketsListSection({super.key});
@@ -11,6 +12,7 @@ class TicketsListSection extends StatelessWidget {
     return BlocBuilder<TicketBloc, TicketState>(
       builder: (context, state) {
         final selectedCategory = state.selectedCategory;
+        final selectedTicketId = state.selectedTicket?.id;
         final tickets = selectedCategory != null
             ? state.ticketsByCategory[selectedCategory] ?? []
             : [];
@@ -18,13 +20,19 @@ class TicketsListSection extends StatelessWidget {
         tickets.sort((a, b) {
           int getStatusPriority(String status) {
             switch (status) {
-              case 'ожидает': return 1;
-              case 'зарегистрирован': return 2;
-              case 'завершен': return 3;
-              default: return 4;
+              case 'ожидает':
+                return 1;
+              case 'зарегистрирован':
+                return 2;
+              case 'завершен':
+                return 3;
+              default:
+                return 4;
             }
           }
-          return getStatusPriority(a.status).compareTo(getStatusPriority(b.status));
+
+          return getStatusPriority(a.status)
+              .compareTo(getStatusPriority(b.status));
         });
 
         return Card(
@@ -54,7 +62,9 @@ class TicketsListSection extends StatelessWidget {
                           itemCount: tickets.length,
                           itemBuilder: (context, index) {
                             final ticket = tickets[index];
-                            
+                            final isSelected = selectedTicketId == ticket.id;
+                            final canBeCalled = ticket.status == 'ожидает';
+
                             String statusText;
                             Color statusColor;
 
@@ -75,6 +85,9 @@ class TicketsListSection extends StatelessWidget {
                             }
 
                             return ListTile(
+                              selected: isSelected,
+                              selectedTileColor:
+                                  const Color(0xFF415BE7).withOpacity(0.1),
                               title: Text(
                                 ticket.number,
                                 style: const TextStyle(fontSize: 16),
@@ -85,6 +98,13 @@ class TicketsListSection extends StatelessWidget {
                                   color: statusColor,
                                 ),
                               ),
+                              onTap: canBeCalled
+                                  ? () {
+                                      context
+                                          .read<TicketBloc>()
+                                          .add(SelectTicketEvent(ticket));
+                                    }
+                                  : null,
                             );
                           },
                         ),
