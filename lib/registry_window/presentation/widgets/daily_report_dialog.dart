@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import '../blocs/report/report_bloc.dart';
 
 class DailyReportDialog extends StatefulWidget {
@@ -15,7 +16,6 @@ class _DailyReportDialogState extends State<DailyReportDialog> {
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
 
-  // 1. Declare ScrollControllers
   late final ScrollController _verticalScrollController;
   late final ScrollController _horizontalScrollController;
 
@@ -24,14 +24,12 @@ class _DailyReportDialogState extends State<DailyReportDialog> {
     super.initState();
     context.read<ReportBloc>().add(LoadDailyReport());
 
-    // 2. Initialize ScrollControllers
     _verticalScrollController = ScrollController();
     _horizontalScrollController = ScrollController();
   }
 
   @override
   void dispose() {
-    // 3. Dispose of ScrollControllers
     _verticalScrollController.dispose();
     _horizontalScrollController.dispose();
     super.dispose();
@@ -128,7 +126,7 @@ class _DailyReportDialogState extends State<DailyReportDialog> {
             ],
           ),
           const SizedBox(height: 16),
-          // Новая строка для фильтров по времени
+          // фильтры по времени
           Row(
             children: [
               Expanded(child: _buildTimePicker(
@@ -197,18 +195,17 @@ class _DailyReportDialogState extends State<DailyReportDialog> {
       return const Center(child: Text('Нет данных для отображения.'));
     }
 
-    // 4. Assign the controllers to the widgets
     return Scrollbar(
       thumbVisibility: true,
-      controller: _verticalScrollController, // Assign vertical controller
+      controller: _verticalScrollController,
       child: SingleChildScrollView(
-        controller: _verticalScrollController, // Assign vertical controller
+        controller: _verticalScrollController,
         scrollDirection: Axis.vertical,
         child: Scrollbar(
           thumbVisibility: true,
-          controller: _horizontalScrollController, // Assign horizontal controller
+          controller: _horizontalScrollController,
           child: SingleChildScrollView(
-            controller: _horizontalScrollController, // Assign horizontal controller
+            controller: _horizontalScrollController,
             scrollDirection: Axis.horizontal,
             child: DataTable(
               sortColumnIndex: state.sortColumnIndex,
@@ -221,6 +218,9 @@ class _DailyReportDialogState extends State<DailyReportDialog> {
                 DataColumn(label: const Text('Кабинет'), onSort: (i, a) => _onSort(context, i, a)),
                 DataColumn(label: const Text('Время приема'), onSort: (i, a) => _onSort(context, i, a)),
                 DataColumn(label: const Text('Статус'), onSort: (i, a) => _onSort(context, i, a)),
+                DataColumn(label: const Text('Вызван'), onSort: (i, a) => _onSort(context, i, a)),
+                DataColumn(label: const Text('Завершён'), onSort: (i, a) => _onSort(context, i, a)),
+                DataColumn(label: const Text('Длительность'), onSort: (i, a) => _onSort(context, i, a)),
               ],
               rows: state.displayedRows.map((row) {
                 return DataRow(cells: [
@@ -231,6 +231,9 @@ class _DailyReportDialogState extends State<DailyReportDialog> {
                   DataCell(Text(row.cabinetNumber?.toString() ?? '–')),
                   DataCell(Text(row.appointmentTime ?? '–')),
                   DataCell(Text(row.status)),
+                  DataCell(Text(row.calledAt != null ? DateFormat('HH:mm:ss').format(row.calledAt!) : '–')),
+                  DataCell(Text(row.completedAt != null ? DateFormat('HH:mm:ss').format(row.completedAt!) : '–')),
+                  DataCell(Text(row.duration ?? '–')),
                 ]);
               }).toList(),
             ),

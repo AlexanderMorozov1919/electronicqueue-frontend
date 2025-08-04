@@ -17,7 +17,9 @@ class TicketsListSection extends StatelessWidget {
             ? state.ticketsByCategory[selectedCategory] ?? []
             : [];
 
+        // *** НАЧАЛО ИЗМЕНЕНИЙ В СОРТИРОВКЕ ***
         tickets.sort((a, b) {
+          // 1. Сортировка по статусу
           int getStatusPriority(String status) {
             switch (status) {
               case 'ожидает':
@@ -31,9 +33,28 @@ class TicketsListSection extends StatelessWidget {
             }
           }
 
-          return getStatusPriority(a.status)
-              .compareTo(getStatusPriority(b.status));
+          final statusComparison =
+              getStatusPriority(a.status).compareTo(getStatusPriority(b.status));
+
+          if (statusComparison != 0) {
+            return statusComparison;
+          }
+
+          // 2. Сортировка внутри групп
+          // Если оба в ожидании, сортируем по времени создания (старые вверху)
+          if (a.status == 'ожидает' && b.status == 'ожидает') {
+            return a.createdAt.compareTo(b.createdAt);
+          }
+
+          // Для остальных статусов сортируем по времени вызова (старые вверху)
+          // Обрабатываем null значения: талоны без времени вызова будут в конце
+          if (a.calledAt == null && b.calledAt == null) return 0;
+          if (a.calledAt == null) return 1; // a идет после b
+          if (b.calledAt == null) return -1; // b идет после a
+          
+          return a.calledAt!.compareTo(b.calledAt!);
         });
+        // *** КОНЕЦ ИЗМЕНЕНИЙ В СОРТИРОВКЕ ***
 
         return Card(
           color: Colors.white,

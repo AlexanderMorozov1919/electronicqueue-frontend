@@ -10,11 +10,6 @@ import '../../domain/entities/ticket_entity.dart';
 class NextTicketButton extends StatelessWidget {
   const NextTicketButton({super.key});
 
-  bool _canCallNext(TicketEntity? ticket) {
-    if (ticket == null) return true;
-    return ticket.isCompleted || ticket.isRegistered;
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocSelector<TicketBloc, TicketState,
@@ -28,12 +23,17 @@ class NextTicketButton extends StatelessWidget {
         final runtimeType = data.$3;
         final bool isAnyLoading = runtimeType == TicketLoading;
 
-        // Если талон выбран из списка
+        final bool isCurrentTicketActive = currentTicket != null &&
+            !currentTicket.isCompleted &&
+            !currentTicket.isRegistered;
+
         if (selectedTicket != null) {
+          final canCallSpecific = !isAnyLoading && !isCurrentTicketActive;
+
           return SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: !isAnyLoading
+              onPressed: canCallSpecific
                   ? () {
                       final windowNumber =
                           context.read<AuthBloc>().windowNumber ?? 1;
@@ -60,13 +60,12 @@ class NextTicketButton extends StatelessWidget {
           );
         }
 
-        // Логика кнопки "Вызвать следующего" по умолчанию
-        final bool isEnabled = _canCallNext(currentTicket);
+        final canCallNext = !isCurrentTicketActive;
 
         return SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: isEnabled && !isAnyLoading
+            onPressed: canCallNext && !isAnyLoading
                 ? () {
                     final windowNumber =
                         context.read<AuthBloc>().windowNumber ?? 1;
