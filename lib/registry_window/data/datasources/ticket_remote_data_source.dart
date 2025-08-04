@@ -80,73 +80,39 @@ class TicketRemoteDataSourceImpl implements TicketDataSource {
   }
 
   @override
-  Future<List<TicketEntity>> getTicketsByCategory(
-    TicketCategory category,
-  ) async {
-    // Устанавливаем базовое условие для фильтрации по статусам
-    final List<Map<String, dynamic>> conditions = [
-      {
-        "field": "status",
-        "operator": "IN",
-        "value": ["ожидает", "зарегистрирован", "завершен"]
-      }
-    ];
-
-    // Добавляем фильтр по категории, если выбрана не "Все категории"
-    if (category != TicketCategory.all) {
-      String letterPrefix = '';
-      switch (category) {
-        case TicketCategory.byAppointment:
-          letterPrefix = 'A%';
-          break;
-        case TicketCategory.makeAppointment:
-          letterPrefix = 'B%';
-          break;
-        case TicketCategory.tests:
-          letterPrefix = 'C%';
-          break;
-        case TicketCategory.other:
-          letterPrefix = 'D%';
-          break;
-        case TicketCategory.all:
-          break;
-      }
-      conditions.add({
-        "field": "ticket_number",
-        "operator": "LIKE",
-        "value": letterPrefix,
-      });
+  Future<List<TicketEntity>> getTicketsByCategory(TicketCategory category) async {
+    String categoryPrefix = '';
+    switch (category) {
+      case TicketCategory.byAppointment:
+        categoryPrefix = 'A';
+        break;
+      case TicketCategory.makeAppointment:
+        categoryPrefix = 'B';
+        break;
+      case TicketCategory.tests:
+        categoryPrefix = 'C';
+        break;
+      case TicketCategory.other:
+        categoryPrefix = 'D';
+        break;
+      case TicketCategory.all:
+        break;
     }
 
-    final requestBody = {
-      "page": 1,
-      "limit": 1000, // Лимит для получения всех нужных талонов
-      "filters": {
-        "logical_operator": "AND",
-        "conditions": conditions,
-      },
-    };
+    final Map<String, String> queryParams = {};
+    if (categoryPrefix.isNotEmpty) {
+      queryParams['category'] = categoryPrefix;
+    }
+    
+    final uri = Uri.parse('$_baseUrl/api/registrar/tickets').replace(queryParameters: queryParams);
 
-    final uri = Uri.parse('$_baseUrl/api/database/tickets/select');
-    final headers = {
-      'Content-Type': 'application/json',
-      'X-API-KEY': AppConfig.externalApiKey,
-    };
-
-    final response = await client.post(
+    final response = await client.get(
       uri,
-      headers: headers,
-      body: json.encode(requestBody),
+      headers: _getAuthHeaders(),
     );
 
     if (response.statusCode == 200) {
-      final decodedResponse = json.decode(utf8.decode(response.bodyBytes));
-
-      if (decodedResponse is! Map || !decodedResponse.containsKey('data')) {
-        throw ServerException("Ответ от сервера не содержит ключ 'data'");
-      }
-
-      final List<dynamic> ticketData = decodedResponse['data'] ?? [];
+      final List<dynamic> ticketData = json.decode(utf8.decode(response.bodyBytes));
       return ticketData.map((json) => TicketModel.fromJson(json)).toList();
     } else {
       throw ServerException(

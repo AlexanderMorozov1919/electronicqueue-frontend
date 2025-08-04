@@ -16,4 +16,12 @@ class AppConfig {
     }
     return key;
   }
+
+  static String get internalApiKey {
+    final key = dotenv.env['INTERNAL_API_KEY'];
+    if (key == null) {
+      throw Exception('INTERNAL_API_KEY не найден в .env файле');
+    }
+    return key;
+  }
 }
