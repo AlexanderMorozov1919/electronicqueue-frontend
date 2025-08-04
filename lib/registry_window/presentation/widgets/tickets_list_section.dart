@@ -15,6 +15,18 @@ class TicketsListSection extends StatelessWidget {
             ? state.ticketsByCategory[selectedCategory] ?? []
             : [];
 
+        tickets.sort((a, b) {
+          int getStatusPriority(String status) {
+            switch (status) {
+              case 'ожидает': return 1;
+              case 'зарегистрирован': return 2;
+              case 'завершен': return 3;
+              default: return 4;
+            }
+          }
+          return getStatusPriority(a.status).compareTo(getStatusPriority(b.status));
+        });
+
         return Card(
           color: Colors.white,
           child: Padding(
@@ -46,15 +58,20 @@ class TicketsListSection extends StatelessWidget {
                             String statusText;
                             Color statusColor;
 
-                            if (ticket.isCompleted) {
-                              statusText = 'Завершен';
-                              statusColor = Colors.green;
-                            } else if (ticket.isRegistered) {
-                              statusText = 'Зарегистрирован';
-                              statusColor = Colors.blue;
-                            } else {
-                              statusText = 'В ожидании';
-                              statusColor = Colors.orange;
+                            switch (ticket.status) {
+                              case 'завершен':
+                                statusText = 'Завершен';
+                                statusColor = Colors.green;
+                                break;
+                              case 'зарегистрирован':
+                                statusText = 'Зарегистрирован';
+                                statusColor = Colors.blue;
+                                break;
+                              case 'ожидает':
+                              default:
+                                statusText = 'В ожидании';
+                                statusColor = Colors.orange;
+                                break;
                             }
 
                             return ListTile(

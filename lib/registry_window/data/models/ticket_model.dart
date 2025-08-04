@@ -7,39 +7,37 @@ class TicketModel extends TicketEntity {
     required super.number,
     required super.category,
     required super.createdAt,
+    required super.status,
     super.isRegistered,
     super.isCompleted,
   });
 
   factory TicketModel.fromJson(Map<String, dynamic> json) {
     TicketCategory determineCategory(String ticketNumber) {
-      if (ticketNumber.startsWith('A')) return TicketCategory.byAppointment;
-      if (ticketNumber.startsWith('B')) return TicketCategory.makeAppointment;
+      if (ticketNumber.startsWith('A')) return TicketCategory.makeAppointment;
+      if (ticketNumber.startsWith('B')) return TicketCategory.byAppointment;
       if (ticketNumber.startsWith('C')) return TicketCategory.tests;
+      if (ticketNumber.startsWith('D')) return TicketCategory.other;
       return TicketCategory.other;
     }
 
     final ticketNumber = json['ticket_number'] as String;
-    final status = json['status'] as String?;
+    final status = json['status'] as String? ?? 'ожидает';
+    final idValue = json['id'] ?? json['ticket_id'];
+
 
     return TicketModel(
-      id: json['id'].toString(),
+      id: idValue.toString(),
       number: ticketNumber,
       category: determineCategory(ticketNumber),
       createdAt: DateTime.parse(json['created_at'] as String),
+      status: status,
       isRegistered: status == 'зарегистрирован',
       isCompleted: status == 'завершен',
     );
   }
 
   Map<String, dynamic> toJson() {
-    String status = 'ожидает';
-    if (isCompleted) {
-      status = 'завершен';
-    } else if (isRegistered) {
-      status = 'зарегистрирован';
-    }
-
     return {
       'id': id,
       'ticket_number': number,
