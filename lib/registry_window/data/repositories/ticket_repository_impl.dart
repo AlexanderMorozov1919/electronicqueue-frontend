@@ -25,14 +25,26 @@ class TicketRepositoryImpl implements TicketRepository {
   }
 
   @override
-  Future<Either<Failure, TicketEntity>> callNextTicket(int windowNumber) async {
+  Future<Either<Failure, TicketEntity>> callNextTicket(int windowNumber, String? categoryPrefix) async {
     try {
-      final ticket = await remoteDataSource.callNextTicket(windowNumber);
+      final ticket = await remoteDataSource.callNextTicket(windowNumber, categoryPrefix);
       return Right(ticket);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {
       return Left(ServerFailure('Произошла непредвиденная ошибка'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, TicketEntity>> callSpecificTicket(String ticketId, int windowNumber) async {
+    try {
+      final ticket = await remoteDataSource.callSpecificTicket(ticketId, windowNumber);
+      return Right(ticket);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Непредвиденная ошибка при вызове талона'));
     }
   }
 

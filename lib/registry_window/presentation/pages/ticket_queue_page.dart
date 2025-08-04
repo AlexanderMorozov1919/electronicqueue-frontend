@@ -1,3 +1,4 @@
+import 'package:elqueue/registry_window/domain/usecases/call_specific_ticket.dart';
 import 'package:elqueue/registry_window/presentation/widgets/logout_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -37,6 +38,9 @@ class TicketQueuePage extends StatelessWidget {
       child: BlocProvider(
         create: (context) => TicketBloc(
           callNextTicket: CallNextTicket(
+            RepositoryProvider.of<TicketRepository>(context),
+          ),
+          callSpecificTicket: CallSpecificTicket(
             RepositoryProvider.of<TicketRepository>(context),
           ),
           registerCurrentTicket: RegisterCurrentTicket(
