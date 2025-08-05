@@ -19,6 +19,7 @@ class MyApp extends StatelessWidget {
       title: 'Электронная очередь',
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        fontFamily: 'Roboto',
       ),
       home: const ExampleScreen(),
     );

@@ -1,3 +1,7 @@
+import 'package:elqueue/queue_reception/data/datasources/ad_display_remote_datasource.dart';
+import 'package:elqueue/queue_reception/data/repositories/ad_display_repository_impl.dart';
+import 'package:elqueue/queue_reception/domain/repositories/ad_display_repository.dart';
+import 'package:elqueue/queue_reception/presentation/blocs/ad_display_bloc.dart';
 import 'package:elqueue/schedule/data/datasources/schedule_remote_data_source.dart';
 import 'package:elqueue/schedule/data/repositories/schedule_repository_impl.dart';
 import 'package:elqueue/schedule/domain/usecases/get_today_schedule.dart';
@@ -15,33 +19,56 @@ void main() async {
   await dotenv.load(fileName: ".env");
   await initializeDateFormatting('ru');
 
+  final httpClient = http.Client();
+
   final scheduleRemoteDataSource =
-      ScheduleRemoteDataSourceImpl(client: http.Client());
+      ScheduleRemoteDataSourceImpl(client: httpClient);
   final scheduleRepository =
       ScheduleRepositoryImpl(remoteDataSource: scheduleRemoteDataSource);
   final getTodaySchedule = GetTodaySchedule(scheduleRepository);
 
-  runApp(MyApp(getTodaySchedule: getTodaySchedule));
+  final adDisplayRepository = AdDisplayRepositoryImpl(
+    dataSource: AdDisplayRemoteDataSource(client: httpClient),
+  );
+
+  runApp(MyApp(
+    getTodaySchedule: getTodaySchedule,
+    adDisplayRepository: adDisplayRepository,
+  ));
 }
 
 class MyApp extends StatelessWidget {
   final GetTodaySchedule getTodaySchedule;
+  final AdDisplayRepository adDisplayRepository; // ДОБАВЛЕНО
 
-  const MyApp({super.key, required this.getTodaySchedule});
+  const MyApp({
+    super.key,
+    required this.getTodaySchedule,
+    required this.adDisplayRepository, // ДОБАВЛЕНО
+  });
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Расписание врачей',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-        fontFamily: 'Manrope',
-      ),
-      home: BlocProvider<ScheduleBloc>(
-        create: (context) => ScheduleBloc(getTodaySchedule: getTodaySchedule),
-        child: const SchedulePage(),
+    // ИЗМЕНЕНО: Оборачиваем в MultiProvider для нескольких BLoC'ов
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<ScheduleBloc>(
+          create: (context) =>
+              ScheduleBloc(getTodaySchedule: getTodaySchedule),
+        ),
+        BlocProvider<AdDisplayBloc>(
+          create: (context) => AdDisplayBloc(repository: adDisplayRepository),
+        ),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Расписание врачей',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          visualDensity: VisualDensity.adaptivePlatformDensity,
+          fontFamily: 'Manrope',
+        ),
+        home: const SchedulePage(),
       ),
     );
   }

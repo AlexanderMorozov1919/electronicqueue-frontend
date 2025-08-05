@@ -1,3 +1,4 @@
+import 'package:elqueue/queue_reception/presentation/blocs/ad_display_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../widgets/schedule_widget.dart';
@@ -11,12 +12,13 @@ class SchedulePage extends StatefulWidget {
 }
 
 class _SchedulePageState extends State<SchedulePage> {
-
   @override
   void initState() {
     super.initState();
     // Запускаем подписку на события сразу при инициализации страницы
     context.read<ScheduleBloc>().add(SubscribeToScheduleUpdates());
+    // ИЗМЕНЕНО: Запускаем загрузку рекламы
+    context.read<AdDisplayBloc>().add(FetchEnabledAds());
   }
 
   @override
@@ -32,11 +34,13 @@ class _SchedulePageState extends State<SchedulePage> {
         listener: (context, state) {
           if (state is ScheduleError) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Ошибка загрузки расписания: ${state.message}')),
+              SnackBar(
+                  content:
+                      Text('Ошибка загрузки расписания: ${state.message}')),
             );
           }
         },
-        child: ScheduleWidget(),
+        child: const ScheduleWidget(),
       ),
     );
   }

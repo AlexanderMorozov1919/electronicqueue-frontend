@@ -1,3 +1,8 @@
+import 'package:elqueue/administrator/data/datasource/ad_remote_data_source.dart';
+import 'package:elqueue/administrator/data/repositories/ad_repository_impl.dart';
+import 'package:elqueue/administrator/domain/repositories/ad_repository.dart';
+import 'package:elqueue/administrator/domain/usecases/manage_ads.dart';
+import 'package:elqueue/administrator/presentation/blocs/ad/ad_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -51,6 +56,11 @@ class AdministratorApp extends StatelessWidget {
             remoteDataSource: SettingsRemoteDataSource(client: httpClient),
           ),
         ),
+        RepositoryProvider<AdRepository>(
+          create: (context) => AdRepositoryImpl(
+            remoteDataSource: AdRemoteDataSourceImpl(client: httpClient),
+          ),
+        ),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -69,6 +79,17 @@ class AdministratorApp extends StatelessWidget {
               settingsRepository: context.read<SettingsRepository>(),
             ),
           ),
+          BlocProvider(
+            create: (context) {
+              final repo = context.read<AdRepository>();
+              return AdBloc(
+                getAds: GetAds(repo),
+                createAd: CreateAd(repo),
+                updateAd: UpdateAd(repo),
+                deleteAd: DeleteAd(repo),
+              );
+            },
+          ),
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
@@ -76,6 +97,7 @@ class AdministratorApp extends StatelessWidget {
           theme: ThemeData(
             primarySwatch: Colors.deepPurple,
             scaffoldBackgroundColor: const Color(0xFFF1F3F4),
+            fontFamily: 'Roboto',
             visualDensity: VisualDensity.adaptivePlatformDensity,
           ),
           // AuthDispatcher - это начальный экран, который решает,
