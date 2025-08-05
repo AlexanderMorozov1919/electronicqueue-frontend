@@ -6,5 +6,12 @@ abstract class AdDisplayEvent extends Equatable {
   List<Object> get props => [];
 }
 
-class FetchEnabledAds extends AdDisplayEvent {}
-class _ShowNextAd extends AdDisplayEvent {} // Внутреннее событие
+class FetchEnabledAds extends AdDisplayEvent {
+  final String screen;
+  const FetchEnabledAds({required this.screen});
+
+  @override
+  List<Object> get props => [screen];
+}
+
+class _ShowNextAd extends AdDisplayEvent {}

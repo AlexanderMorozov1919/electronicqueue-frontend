@@ -113,7 +113,7 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
           borderRadius: borderRadius,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: const Color.fromARGB(38, 0, 0, 0),
               blurRadius: 10.0,
               spreadRadius: 2.0,
               offset: Offset.zero, // Тень со всех сторон
@@ -129,9 +129,9 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
               return FadeTransition(opacity: animation, child: child);
             },
             // 3. Само изображение
-            child: Image.memory(
-              currentAd.picture,
-              key: ValueKey<int>(state.currentIndex),
+            child: Image(
+              image: currentAd.picture,
+              key: ValueKey<int>(currentAd.id),
               // ИЗМЕНЕНО: Заполняем пространство, обрезая лишнее, чтобы скругление и тень всегда применялись к краям картинки
               fit: BoxFit.cover,
               width: double.infinity,

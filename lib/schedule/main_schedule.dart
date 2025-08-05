@@ -39,17 +39,16 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   final GetTodaySchedule getTodaySchedule;
-  final AdDisplayRepository adDisplayRepository; // ДОБАВЛЕНО
+  final AdDisplayRepository adDisplayRepository;
 
   const MyApp({
     super.key,
     required this.getTodaySchedule,
-    required this.adDisplayRepository, // ДОБАВЛЕНО
+    required this.adDisplayRepository,
   });
 
   @override
   Widget build(BuildContext context) {
-    // ИЗМЕНЕНО: Оборачиваем в MultiProvider для нескольких BLoC'ов
     return MultiBlocProvider(
       providers: [
         BlocProvider<ScheduleBloc>(
@@ -57,7 +56,9 @@ class MyApp extends StatelessWidget {
               ScheduleBloc(getTodaySchedule: getTodaySchedule),
         ),
         BlocProvider<AdDisplayBloc>(
-          create: (context) => AdDisplayBloc(repository: adDisplayRepository),
+          create: (context) => AdDisplayBloc(repository: adDisplayRepository)
+            // ИЗМЕНЕНО: Передаем тип экрана при инициализации
+            ..add(const FetchEnabledAds(screen: 'schedule')),
         ),
       ],
       child: MaterialApp(

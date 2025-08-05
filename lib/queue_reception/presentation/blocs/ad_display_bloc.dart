@@ -3,6 +3,7 @@ import 'package:bloc/bloc.dart';
 import 'package:elqueue/queue_reception/domain/entities/ad_display.dart';
 import 'package:elqueue/queue_reception/domain/repositories/ad_display_repository.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 
 part 'ad_display_event.dart';
 part 'ad_display_state.dart';
@@ -11,39 +12,56 @@ class AdDisplayBloc extends Bloc<AdDisplayEvent, AdDisplayState> {
   final AdDisplayRepository repository;
   Timer? _adTimer;
   Timer? _refreshTimer;
+  String? _currentScreen;
+
+  static const _refreshInterval = Duration(seconds: 5);
 
   AdDisplayBloc({required this.repository}) : super(const AdDisplayState()) {
     on<FetchEnabledAds>(_onFetchEnabledAds);
     on<_ShowNextAd>(_onShowNextAd);
-
-    // Убрали периодическое обновление, так как оно теперь происходит после каждого цикла
-    // _refreshTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
-    //   add(FetchEnabledAds());
-    // });
   }
 
   Future<void> _onFetchEnabledAds(FetchEnabledAds event, Emitter<AdDisplayState> emit) async {
-    // Небольшая задержка перед запросом, чтобы избежать "дергания" при быстром цикле
-    await Future.delayed(const Duration(milliseconds: 200)); 
-    final ads = await repository.getEnabledAds();
+    _currentScreen = event.screen;
     _adTimer?.cancel();
-    if (ads.isNotEmpty) {
-      emit(state.copyWith(ads: ads, currentIndex: 0));
-      _startAdCycle();
-    } else {
-      emit(state.copyWith(ads: [], currentIndex: 0));
+    _refreshTimer?.cancel();
+
+    final newAds = await repository.getEnabledAds(event.screen);
+
+    // Если новый список пуст
+    if (newAds.isEmpty) {
+      // Если и старый был пуст, ничего не делаем, просто ждем следующего вызова таймера
+      if (state.ads.isNotEmpty) {
+        emit(state.copyWith(ads: [], currentIndex: 0));
+      }
+      _startRefreshTimer();
+      return;
     }
+
+    // Если новый список не пуст, а старый был пуст, или если списки отличаются
+    if (!listEquals(newAds, state.ads)) {
+      emit(state.copyWith(ads: newAds, currentIndex: 0));
+    } 
+    // Если списки одинаковые, мы не генерируем новое состояние, чтобы избежать моргания.
+    // Цикл будет перезапущен из _onShowNextAd.
+    
+    _startAdCycle();
   }
 
   void _onShowNextAd(_ShowNextAd event, Emitter<AdDisplayState> emit) {
-    if (state.ads.isEmpty) return;
-    
-    // ИЗМЕНЕНО: Логика обновления после цикла
-    final nextIndex = (state.currentIndex + 1) % state.ads.length;
+    if (state.ads.isEmpty || _currentScreen == null) return;
 
-    if (nextIndex == 0) {
-      // Цикл завершен, запрашиваем обновленные данные
-      add(FetchEnabledAds());
+    final nextIndex = state.currentIndex + 1;
+
+    // КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Логика зацикливания
+    if (nextIndex >= state.ads.length) {
+      // Цикл завершен.
+      // 1. Проверяем, не изменился ли список рекламы на сервере.
+      add(FetchEnabledAds(screen: _currentScreen!));
+      // 2. Оптимистично сбрасываем индекс на 0, чтобы цикл продолжился немедленно,
+      //    даже если список на сервере не изменился.
+      //    Новая логика в _onFetchEnabledAds предотвратит моргание.
+      emit(state.copyWith(currentIndex: 0));
     } else {
       // Просто показываем следующий слайд
       emit(state.copyWith(currentIndex: nextIndex));
@@ -55,9 +73,21 @@ class AdDisplayBloc extends Bloc<AdDisplayEvent, AdDisplayState> {
     _adTimer?.cancel();
     if (state.ads.isEmpty) return;
 
-    final currentAd = state.ads[state.currentIndex];
+    // Убедимся, что индекс в пределах допустимого диапазона
+    final index = state.currentIndex.clamp(0, state.ads.length - 1);
+    final currentAd = state.ads[index];
+    
     _adTimer = Timer(Duration(seconds: currentAd.durationSec), () {
-      add(_ShowNextAd());
+      if (!isClosed) add(_ShowNextAd());
+    });
+  }
+
+  void _startRefreshTimer() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer(_refreshInterval, () {
+      if (!isClosed && _currentScreen != null) {
+        add(FetchEnabledAds(screen: _currentScreen!));
+      }
     });
   }
 

@@ -8,7 +8,12 @@ class AdDisplayRepositoryImpl implements AdDisplayRepository {
   AdDisplayRepositoryImpl({required this.dataSource});
 
   @override
-  Future<List<AdDisplay>> getEnabledAds() {
-    return dataSource.getEnabledAds();
+  Future<List<AdDisplay>> getEnabledAds(String screen) async {
+    try {
+      return await dataSource.getEnabledAds(screen);
+    } catch (e) {
+      print('AdDisplayRepositoryImpl Error: $e');
+      return [];
+    }
   }
 }
