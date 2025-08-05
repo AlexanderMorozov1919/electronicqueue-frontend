@@ -1,6 +1,6 @@
 part of 'schedule_widget.dart';
 
-// 1. ДОБАВЬТЕ ЭТОТ ВСПОМОГАТЕЛЬНЫЙ КЛАСС В НАЧАЛЕ ФАЙЛА
+// 1. Вспомогательный класс (без изменений)
 class _DisplayBlock {
   final DateTime startTime;
   final DateTime endTime;
@@ -43,7 +43,7 @@ class ScheduleColumn extends StatelessWidget {
     return '$start - $end';
   }
 
-  // 2. ПОЛНОСТЬЮ ЗАМЕНИТЕ СТАРЫЙ МЕТОД _buildCards НА ЭТОТ
+  // 2. Метод _buildCards (без изменений в логике, но вызов ScheduleCard теперь проще)
   List<Widget> _buildCards() {
     final dateOnly = date.split('T').first;
     final List<_DisplayBlock> displayBlocks = [];
@@ -150,7 +150,7 @@ class ScheduleColumn extends StatelessWidget {
             appTheme: appTheme,
             status: block.status,
             time: _formatTimeRange(block.startTime, block.endTime),
-            cabinet: block.cabinet,
+            // Кабинет больше не передается в ScheduleCard
           ),
         ),
       );
@@ -158,6 +158,7 @@ class ScheduleColumn extends StatelessWidget {
     return cards;
   }
 
+  // ИЗМЕНЕНИЕ: Убираем сетку
   List<Widget> _buildScheduleTable() {
     List<Widget> table = [];
 
@@ -165,22 +166,8 @@ class ScheduleColumn extends StatelessWidget {
       table.add(Container(
         width: 280,
         height: sectionHeight,
-        padding: EdgeInsets.all(0),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          border: Border(
-            right: BorderSide(
-              width: 1,
-              color: appTheme.scheduleTableColor,
-            ),
-            bottom: (timePoints[i + 1].isAxis)
-                ? BorderSide(
-                    width: 1,
-                    color: appTheme.scheduleTableColor,
-                  )
-                : BorderSide.none,
-          ),
-        ),
+        padding: const EdgeInsets.all(0),
+        // Убрали decoration с границами
       ));
     }
     return table;
@@ -188,6 +175,15 @@ class ScheduleColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ИЗМЕНЕНИЕ: Находим номер кабинета для врача
+    int? cabinet;
+    for (final slot in doctorSchedule.slots) {
+      if (slot.cabinet != null) {
+        cabinet = slot.cabinet;
+        break;
+      }
+    }
+
     return SizedBox(
       width: 280,
       child: Column(
@@ -195,25 +191,16 @@ class ScheduleColumn extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(0),
             width: 280,
-            decoration: BoxDecoration(
+            // ИЗМЕНЕНИЕ: Убираем сетку
+            decoration: const BoxDecoration(
               color: Colors.transparent,
-              border: Border(
-                right: BorderSide(
-                  width: 1,
-                  color: appTheme.scheduleTableColor,
-                ),
-                bottom: BorderSide(
-                  width: 1,
-                  color: appTheme.scheduleTableColor,
-                ),
-              ),
             ),
             child: ScheduleActor(
               actorId: doctorSchedule.id,
               appTheme: appTheme,
               employeeName: doctorSchedule.fullName,
               equipmentName: doctorSchedule.specialization,
-              branchName: '', // No branch name in model
+              cabinet: cabinet, // Передаем найденный кабинет
             ),
           ),
           Stack(

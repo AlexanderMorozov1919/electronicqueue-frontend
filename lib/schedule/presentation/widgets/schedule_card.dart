@@ -4,14 +4,12 @@ class ScheduleCard extends StatelessWidget {
   final String time;
   final String status;
   final AppTheme appTheme;
-  final int? cabinet;
 
   const ScheduleCard({
     super.key,
     required this.appTheme,
     required this.status,
     required this.time,
-    this.cabinet,
   });
 
   // Определяет цвет фона в зависимости от статуса
@@ -58,17 +56,7 @@ class ScheduleCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(time, style: textStyle),
-                  if (cabinet != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2.0),
-                      child: Text('Кабинет: $cabinet', style: textStyle),
-                    ),
-                ],
-              ),
+              Text(time, style: textStyle),
               Text(
                 statusToRussian[status] ?? '',
                 style: textStyle,
