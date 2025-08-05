@@ -21,6 +21,7 @@ class ScheduleColumn extends StatelessWidget {
   final List<TimePoint> timePoints;
   final double sectionHeight;
   final AppTheme appTheme;
+  final double width;
 
   const ScheduleColumn({
     super.key,
@@ -29,6 +30,7 @@ class ScheduleColumn extends StatelessWidget {
     required this.date,
     required this.sectionHeight,
     required this.timePoints,
+    required this.width,
   });
 
   String _formatTimeRange(DateTime startTime, DateTime endTime) {
@@ -90,24 +92,40 @@ class ScheduleColumn extends StatelessWidget {
       return []; // Нечего отображать, если нет временной шкалы
     }
 
+    // Используем время из переданных timePoints как границы
     final overallStartTime = timePoints.first.time;
     final overallEndTime = timePoints.last.time;
     DateTime currentTime = overallStartTime;
 
     for (final block in displayBlocks) {
+      // Игнорируем блоки, которые полностью вне видимого диапазона
+      if (block.endTime.isBefore(overallStartTime) || block.startTime.isAfter(overallEndTime)) {
+        continue;
+      }
+
+      // Обрезаем блоки, которые частично выходят за границы
+      DateTime effectiveBlockStart = block.startTime.isBefore(overallStartTime) ? overallStartTime : block.startTime;
+      DateTime effectiveBlockEnd = block.endTime.isAfter(overallEndTime) ? overallEndTime : block.endTime;
+
+
       // Если есть промежуток до начала текущего блока, создаем "недоступный" блок
-      if (currentTime.isBefore(block.startTime)) {
+      if (currentTime.isBefore(effectiveBlockStart)) {
         finalBlocks.add(_DisplayBlock(
           startTime: currentTime,
-          endTime: block.startTime,
+          endTime: effectiveBlockStart,
           status: 'unavailable',
           cabinet: null,
         ));
       }
       // Добавляем сам блок (реальный, сгруппированный)
-      finalBlocks.add(block);
+      finalBlocks.add(_DisplayBlock(
+          startTime: effectiveBlockStart,
+          endTime: effectiveBlockEnd,
+          status: block.status,
+          cabinet: block.cabinet,
+        ));
       // Сдвигаем указатель времени на конец добавленного блока
-      currentTime = block.endTime;
+      currentTime = effectiveBlockEnd;
     }
 
     // Заполняем оставшееся время до конца дня как "недоступное"
@@ -120,8 +138,8 @@ class ScheduleColumn extends StatelessWidget {
       ));
     }
     
-    // Обрабатываем случай, когда у врача вообще нет слотов в расписании
-    if (sortedSlots.isEmpty && overallStartTime.isBefore(overallEndTime)) {
+    // Обрабатываем случай, когда у врача вообще нет слотов в расписании на видимом участке
+    if (finalBlocks.isEmpty && overallStartTime.isBefore(overallEndTime)) {
       finalBlocks.add(_DisplayBlock(
         startTime: overallStartTime,
         endTime: overallEndTime,
@@ -132,12 +150,11 @@ class ScheduleColumn extends StatelessWidget {
 
     // Шаг 3: Создаем виджеты из финального списка блоков
     final List<Widget> cards = [];
-    // Высота одной минуты на экране (исходя из того, что `sectionHeight` - это 30 минут)
     final double heightPerMinute = sectionHeight / 30.0; 
 
     for (final block in finalBlocks) {
       final durationInMinutes = block.endTime.difference(block.startTime).inMinutes;
-      if (durationInMinutes <= 0) continue; // Пропускаем блоки с нулевой или отрицательной длиной
+      if (durationInMinutes <= 0) continue; 
 
       final cardHeight = durationInMinutes * heightPerMinute;
 
@@ -161,21 +178,24 @@ class ScheduleColumn extends StatelessWidget {
   // ИЗМЕНЕНИЕ: Убираем сетку
   List<Widget> _buildScheduleTable() {
     List<Widget> table = [];
+    if(timePoints.length < 2) return table;
 
-    for (int i = 0; i < timePoints.length - 1; i++) {
-      table.add(Container(
-        width: 280,
-        height: sectionHeight,
+    // Высота одной секции (30 минут)
+    final double sectionHeight = 60;
+    // Общая высота контейнера на основе видимых временных точек
+    final double totalHeight = sectionHeight * (timePoints.length-1);
+
+    table.add(Container(
+        width: width,
+        height: totalHeight,
         padding: const EdgeInsets.all(0),
-        // Убрали decoration с границами
       ));
-    }
+      
     return table;
   }
 
   @override
   Widget build(BuildContext context) {
-    // ИЗМЕНЕНИЕ: Находим номер кабинета для врача
     int? cabinet;
     for (final slot in doctorSchedule.slots) {
       if (slot.cabinet != null) {
@@ -185,13 +205,14 @@ class ScheduleColumn extends StatelessWidget {
     }
 
     return SizedBox(
-      width: 280,
+      width: width,
       child: Column(
         children: [
+          // --- ИЗМЕНЕНИЕ: Задаем явную высоту для шапки ---
           Container(
+            height: 135,
             padding: const EdgeInsets.all(0),
-            width: 280,
-            // ИЗМЕНЕНИЕ: Убираем сетку
+            width: width,
             decoration: const BoxDecoration(
               color: Colors.transparent,
             ),
@@ -200,29 +221,30 @@ class ScheduleColumn extends StatelessWidget {
               appTheme: appTheme,
               employeeName: doctorSchedule.fullName,
               equipmentName: doctorSchedule.specialization,
-              cabinet: cabinet, // Передаем найденный кабинет
+              cabinet: cabinet, 
             ),
           ),
-          Stack(
-            clipBehavior: Clip.hardEdge,
-            children: [
-              Column(
-                children: _buildScheduleTable(),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(16.0),
+                bottomRight: Radius.circular(16.0),
               ),
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: SizedBox(
-                  width: 280,
-                  height: sectionHeight * (timePoints.length - 1),
-                  child: Column(
-                    key: ValueKey('cards-col-${doctorSchedule.id}'),
-                    children: _buildCards(),
+              child: Stack(
+                clipBehavior: Clip.hardEdge,
+                children: [
+                  Column(
+                    children: _buildScheduleTable(),
                   ),
-                ),
+                  Positioned.fill(
+                    child: Column(
+                      key: ValueKey('cards-col-${doctorSchedule.id}'),
+                      children: _buildCards(),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ],
       ),
