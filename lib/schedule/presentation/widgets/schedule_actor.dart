@@ -6,15 +6,16 @@ class ScheduleActor extends StatelessWidget {
   final int actorId;
   final String employeeName;
   final String equipmentName;
-  final String branchName;
+  final int? cabinet;
 
-  ScheduleActor({
+  const ScheduleActor({
+    super.key,
     required this.actorId,
     required this.appTheme,
     required this.employeeName,
     required this.equipmentName,
-    required this.branchName,
-    this.navigationShell = null,
+    this.cabinet,
+    this.navigationShell,
   });
     
 
@@ -44,12 +45,15 @@ class ScheduleActor extends StatelessWidget {
             softWrap: false,
           ),
           const SizedBox(height: 4),
-          Text(
-            branchName,
-            style: Theme.of(context).textTheme.bodySmall,
-            overflow: TextOverflow.ellipsis,
-            softWrap: false,
-          ),
+          if (cabinet != null)
+            Text(
+              'Кабинет: $cabinet',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ), 
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+            ),
         ],
       ),
     );

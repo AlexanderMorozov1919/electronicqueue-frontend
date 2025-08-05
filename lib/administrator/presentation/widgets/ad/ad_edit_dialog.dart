@@ -19,6 +19,8 @@ class _AdEditDialogState extends State<AdEditDialog> {
   late final TextEditingController _durationController;
   Uint8List? _imageBytes;
   bool _isEnabled = true;
+  bool _receptionOn = true; 
+  bool _scheduleOn = true;  
   bool _isDragging = false;
 
   @override
@@ -26,12 +28,12 @@ class _AdEditDialogState extends State<AdEditDialog> {
     super.initState();
     if (widget.ad != null) {
       _durationController = TextEditingController(text: widget.ad!.durationSec.toString());
-      // --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
-      // Проверяем, что картинка не null, перед декодированием
       if (widget.ad!.picture != null && widget.ad!.picture!.isNotEmpty) {
         _imageBytes = base64Decode(widget.ad!.picture!);
       }
       _isEnabled = widget.ad!.isEnabled;
+      _receptionOn = widget.ad!.receptionOn; 
+      _scheduleOn = widget.ad!.scheduleOn;   
     } else {
       _durationController = TextEditingController(text: '5');
     }
@@ -73,6 +75,8 @@ class _AdEditDialogState extends State<AdEditDialog> {
       picture: base64Encode(_imageBytes!),
       durationSec: duration,
       isEnabled: _isEnabled,
+      receptionOn: _receptionOn, 
+      scheduleOn: _scheduleOn,   
     );
 
     if (widget.ad == null) {
@@ -148,14 +152,32 @@ class _AdEditDialogState extends State<AdEditDialog> {
                   border: OutlineInputBorder(),
                 ),
               ),
+              // Switches for options
               const SizedBox(height: 16),
-              // IsEnabled switch
               SwitchListTile(
                 title: const Text('Включено'),
                 value: _isEnabled,
                 onChanged: (value) {
                   setState(() {
                     _isEnabled = value;
+                  });
+                },
+              ),
+              SwitchListTile(
+                title: const Text('На табло регистратуры'),
+                value: _receptionOn,
+                onChanged: (value) {
+                  setState(() {
+                    _receptionOn = value;
+                  });
+                },
+              ),
+              SwitchListTile(
+                title: const Text('На общем расписании'),
+                value: _scheduleOn,
+                onChanged: (value) {
+                  setState(() {
+                    _scheduleOn = value;
                   });
                 },
               ),

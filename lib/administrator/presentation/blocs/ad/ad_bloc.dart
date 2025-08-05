@@ -47,13 +47,7 @@ class AdBloc extends Bloc<AdEvent, AdState> {
     result.fold(
       (failure) => emit(AdError(failure.message)),
       (_) {
-        if (state is AdLoaded) {
-          final currentState = state as AdLoaded;
-          final updatedAds = currentState.ads.map((ad) {
-            return ad.id == event.ad.id ? event.ad : ad;
-          }).toList();
-          emit(AdLoaded(updatedAds));
-        }
+        add(LoadAds());
       },
     );
   }

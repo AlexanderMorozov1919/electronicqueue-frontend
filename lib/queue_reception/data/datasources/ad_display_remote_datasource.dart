@@ -8,17 +8,19 @@ class AdDisplayRemoteDataSource {
 
   AdDisplayRemoteDataSource({required this.client});
 
-  Future<List<AdDisplay>> getEnabledAds() async {
+  Future<List<AdDisplay>> getEnabledAds(String screen) async {
+    final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/ads/enabled?screen=$screen');
+
     final response = await client.get(
-      Uri.parse('${AppConfig.apiBaseUrl}/api/ads/enabled'),
+      uri,
+      headers: {'Accept': 'application/json'},
     );
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
       return data.map((json) => AdDisplay.fromJson(json)).toList();
     } else {
-      print('Failed to load ads: ${response.statusCode}');
-      return [];
+      throw Exception('Failed to load ads for screen: $screen');
     }
   }
 }

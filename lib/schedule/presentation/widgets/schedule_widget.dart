@@ -42,11 +42,6 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
   int _currentPage = 0;
   int _doctorsPerPage = 1;
 
-  @override
-  void initState() {
-    super.initState();
-  }
-
   void _startTimer(int totalDoctors) {
     _timer?.cancel();
 
@@ -71,17 +66,52 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
     super.dispose();
   }
 
-  List<TimePoint> _generateTimePoints(
-      String? minTimeStr, String? maxTimeStr, String dateStr) {
+  // Новый метод для расчета min/max времени для конкретных врачей
+  _MinMaxTimes _calculateMinMaxForDoctors(
+      List<DoctorScheduleEntity> doctors, String dateStr) {
+    if (doctors.isEmpty) {
+      final date = DateTime.parse(dateStr);
+      return _MinMaxTimes(
+        minTime: DateTime(date.year, date.month, date.day, 9),
+        maxTime: DateTime(date.year, date.month, date.day, 18),
+      );
+    }
+
+    DateTime? minTime;
+    DateTime? maxTime;
     final dateOnly = dateStr.split('T').first;
 
-    final minTime = minTimeStr != null
-        ? DateTime.parse('${dateOnly}T$minTimeStr')
-        : DateTime.parse('${dateOnly}T09:00:00');
-    final maxTime = maxTimeStr != null
-        ? DateTime.parse('${dateOnly}T$maxTimeStr')
-        : DateTime.parse('${dateOnly}T18:00:00');
+    for (var doctor in doctors) {
+      for (var slot in doctor.slots) {
+        try {
+          final slotStart = DateTime.parse('${dateOnly}T${slot.startTime}');
+          final slotEnd = DateTime.parse('${dateOnly}T${slot.endTime}');
 
+          if (minTime == null || slotStart.isBefore(minTime)) {
+            minTime = slotStart;
+          }
+          if (maxTime == null || slotEnd.isAfter(maxTime)) {
+            maxTime = slotEnd;
+          }
+        } catch (e) {
+          // Игнорируем ошибки парсинга для отказоустойчивости
+        }
+      }
+    }
+
+    if (minTime == null || maxTime == null) {
+      final date = DateTime.parse(dateStr);
+      return _MinMaxTimes(
+        minTime: DateTime(date.year, date.month, date.day, 9),
+        maxTime: DateTime(date.year, date.month, date.day, 18),
+      );
+    }
+
+    return _MinMaxTimes(minTime: minTime, maxTime: maxTime);
+  }
+  
+  // Измененный метод для генерации временной шкалы
+  List<TimePoint> _generateTimePoints(DateTime minTime, DateTime maxTime) {
     final List<TimePoint> points = [];
     DateTime currentTime = minTime;
 
@@ -113,7 +143,7 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
           borderRadius: borderRadius,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: const Color.fromARGB(38, 0, 0, 0),
               blurRadius: 10.0,
               spreadRadius: 2.0,
               offset: Offset.zero, // Тень со всех сторон
@@ -129,10 +159,9 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
               return FadeTransition(opacity: animation, child: child);
             },
             // 3. Само изображение
-            child: Image.memory(
-              currentAd.picture,
-              key: ValueKey<int>(state.currentIndex),
-              // ИЗМЕНЕНО: Заполняем пространство, обрезая лишнее, чтобы скругление и тень всегда применялись к краям картинки
+            child: Image(
+              image: currentAd.picture,
+              key: ValueKey<int>(currentAd.id),
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
@@ -185,17 +214,12 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
                           return const Center(child: CircularProgressIndicator());
                         } else if (state is ScheduleLoaded) {
                           final schedule = state.schedule;
-                          final timePoints = _generateTimePoints(
-                              schedule.minStartTime,
-                              schedule.maxEndTime,
-                              schedule.date);
-
                           if (schedule.doctors.isEmpty) {
                             return const Center(
                                 child: Text('На сегодня расписание отсутствует.'));
                           }
-                          return _buildScheduleContent(
-                              context, schedule, timePoints, appTheme);
+                          // Логика расчета timePoints перенесена в _buildScheduleContent
+                          return _buildScheduleContent(context, schedule, appTheme);
                         } else if (state is ScheduleError) {
                           return Center(
                               child: Text(
@@ -224,7 +248,7 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
   }
 
   Widget _buildScheduleContent(BuildContext context, TodayScheduleEntity schedule,
-      List<TimePoint> timePoints, AppTheme appTheme) {
+      AppTheme appTheme) {
     const double timeColumnWidth = 70.0;
     const double doctorColumnWidth = 280.0;
 
@@ -266,6 +290,12 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
                   ? schedule.doctors.sublist(effectiveStartIndex, endIndex)
                   : <DoctorScheduleEntity>[];
 
+          // === НОВАЯ ЛОГИКА ===
+          // Рассчитываем временной диапазон только для видимых врачей
+          final pageTimes = _calculateMinMaxForDoctors(doctorsToShow, schedule.date);
+          // Генерируем временную шкалу на основе этого диапазона
+          final timePoints = _generateTimePoints(pageTimes.minTime, pageTimes.maxTime);
+          
           return SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -292,4 +322,11 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
       ),
     );
   }
+}
+
+// Добавляем вспомогательный класс _MinMaxTimes в конец файла, вне основного класса
+class _MinMaxTimes {
+  final DateTime minTime;
+  final DateTime maxTime;
+  _MinMaxTimes({required this.minTime, required this.maxTime});
 }

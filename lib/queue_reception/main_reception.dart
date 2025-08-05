@@ -37,7 +37,7 @@ void main() async {
           BlocProvider(
             create: (context) => AdDisplayBloc(
               repository: context.read<AdDisplayRepository>(),
-            )..add(FetchEnabledAds()),
+            )..add(const FetchEnabledAds(screen: 'reception')),
           ),
         ],
         child: MaterialApp(

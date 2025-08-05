@@ -32,7 +32,7 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<QueueDisplayBloc>().add(LoadTicketsEvent());
-      context.read<AdDisplayBloc>().add(FetchEnabledAds());
+      context.read<AdDisplayBloc>().add(const FetchEnabledAds(screen: 'reception'));
     });
   }
 
@@ -123,7 +123,7 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
           borderRadius: borderRadius,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: const Color.fromARGB(38, 0, 0, 0),
               blurRadius: 10.0,
               spreadRadius: 2.0,
               offset: Offset.zero, // Тень со всех сторон
@@ -139,9 +139,9 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
               return FadeTransition(opacity: animation, child: child);
             },
             // 3. Само изображение
-            child: Image.memory(
-              currentAd.picture,
-              key: ValueKey<int>(state.currentIndex),
+            child: Image(
+              image: currentAd.picture,
+              key: ValueKey<int>(currentAd.id),
               // ИЗМЕНЕНО: Заполняем пространство, обрезая лишнее, чтобы скругление и тень всегда применялись к краям картинки
               fit: BoxFit.cover,
               width: double.infinity,
@@ -293,7 +293,7 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
             borderRadius: BorderRadius.circular(8),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black12,
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -366,12 +366,12 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white10,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+              border: Border.all(color: const Color.fromARGB(51, 255, 255, 255), width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white10,
                   blurRadius: 15,
                   offset: const Offset(0, 5),
                   spreadRadius: -5,
@@ -386,12 +386,12 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
                 fontWeight: FontWeight.bold,
                 shadows: [
                   Shadow(
-                    color: Colors.black.withOpacity(0.4),
+                    color: Colors.black45,
                     offset: const Offset(0, 2),
                     blurRadius: 4,
                   ),
                   Shadow(
-                    color: Colors.white.withOpacity(0.3),
+                    color: const Color.fromARGB(76, 255, 255, 255),
                     offset: const Offset(0, 0),
                     blurRadius: 8,
                   ),
@@ -419,7 +419,7 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
             spreadRadius: -3,
           ),
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black12,
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -449,7 +449,7 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
                     fontWeight: FontWeight.w600,
                     shadows: [
                       Shadow(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black38,
                         offset: const Offset(0, 1),
                         blurRadius: 2,
                       ),
@@ -484,7 +484,7 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
                     fontWeight: FontWeight.w600,
                     shadows: [
                       Shadow(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black38,
                         offset: const Offset(0, 1),
                         blurRadius: 2,
                       ),
