@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:elqueue/queue_reception/presentation/blocs/ad_display_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/ticket.dart';
@@ -8,26 +9,19 @@ import '../blocs/queue_display_event.dart';
 import '../blocs/queue_display_state.dart';
 import '../widgets/audio_control_widget.dart';
 
-// --- Константы для дизайна и верстки (скопировано из waiting_screen_page.dart) ---
-
-const Size _kBaseTicketSize = Size(180, 80); // Максимальный размер талона
+// --- Константы для дизайна и верстки ---
+const Size _kBaseTicketSize = Size(180, 80);
 const double _kSpacing = 16.0;
 const double _kOuterPadding = 16.0;
 
-/// Структура для хранения вычисленных параметров верстки
 class _LayoutConfiguration {
   final int columnCount;
   final Size ticketSize;
-
-  const _LayoutConfiguration({
-    required this.columnCount,
-    required this.ticketSize,
-  });
+  const _LayoutConfiguration({required this.columnCount, required this.ticketSize});
 }
 
 class QueueDisplayPage extends StatefulWidget {
   const QueueDisplayPage({super.key});
-
   @override
   State<QueueDisplayPage> createState() => _QueueDisplayPageState();
 }
@@ -36,77 +30,73 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
   @override
   void initState() {
     super.initState();
-    // Загружаем данные при инициализации экрана
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<QueueDisplayBloc>().add(LoadTicketsEvent());
+      context.read<AdDisplayBloc>().add(FetchEnabledAds());
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Оборачиваем в AudioControlWidget для управления звуком
     return AudioControlWidget(
       child: Scaffold(
         backgroundColor: const Color(0xFFF8F9FA),
         body: BlocBuilder<QueueDisplayBloc, QueueDisplayState>(
-          builder: (context, state) {
-            if (state is QueueDisplayError) {
-              return _buildError(state.message);
+          builder: (context, queueState) {
+            if (queueState is QueueDisplayError) {
+              return _buildError(queueState.message);
             }
 
-            if (state is QueueDisplayLoaded) {
-              final waitingTickets =
-                  state.tickets.where((t) => t.status == 'waiting').toList();
-              final calledTickets =
-                  state.tickets.where((t) => t.status == 'called').toList();
+            final tickets = (queueState is QueueDisplayLoaded) ? queueState.tickets : <Ticket>[];
+            final waitingTickets = tickets.where((t) => t.status == 'waiting').toList();
+            final calledTickets = tickets.where((t) => t.status == 'called').toList();
 
-              return Column(
-                children: [
-                  _buildNewHeader(),
-                  _buildQueueStatusHeader(),
-                  Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Левая часть: Ожидают (flex: 2)
-                        Expanded(
-                          flex: 2,
-                          child: _buildTicketDisplayArea(
-                            tickets: waitingTickets,
-                            isWaiting: true,
-                          ),
-                        ),
-                        // Разделитель
-                        Container(
-                          width: 1,
-                          color: const Color(0xFFE0E0E0),
-                        ),
-                        // Правая часть: Вызываются (flex: 1)
-                        Expanded(
-                          flex: 1,
-                          child: _buildTicketDisplayArea(
-                            tickets: calledTickets,
-                            isWaiting: false,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            }
-
-            // Состояние загрузки
             return Column(
               children: [
                 _buildNewHeader(),
-                _buildQueueStatusHeader(),
-                const Expanded(
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF667EEA),
-                      strokeWidth: 3,
-                    ),
+                Expanded(
+                  child: BlocBuilder<AdDisplayBloc, AdDisplayState>(
+                    builder: (context, adState) {
+                      final bool showAds = adState.ads.isNotEmpty;
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Левая часть: Очереди и их заголовок
+                          Expanded(
+                            // Оборачиваем в Column, чтобы разместить заголовок и контент вертикально
+                            child: Column(
+                              children: [
+                                // Заголовок теперь здесь, он будет смещаться вместе с контентом
+                                _buildQueueStatusHeader(),
+                                Expanded(
+                                  // Этот Expanded нужен, чтобы Row с талонами занял все оставшееся место
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        flex: 2,
+                                        child: _buildTicketDisplayArea(tickets: waitingTickets, isWaiting: true),
+                                      ),
+                                      Container(width: 1, color: const Color(0xFFE0E0E0)),
+                                      Expanded(
+                                        flex: 1,
+                                        child: _buildTicketDisplayArea(tickets: calledTickets, isWaiting: false),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Правая часть: Реклама (если есть)
+                          if (showAds)
+                            AspectRatio(
+                              aspectRatio: 3 / 4,
+                              child: _buildAdArea(adState),
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ],
@@ -117,8 +107,54 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
     );
   }
 
-  /// Математическая логика для вычисления оптимального расположения талонов.
-  /// (Скопировано из waiting_screen_page.dart)
+  Widget _buildAdArea(AdDisplayState state) {
+    if (state.ads.isEmpty) {
+      return const SizedBox.shrink();
+    }
+  
+    final currentAd = state.ads[state.currentIndex];
+    final borderRadius = BorderRadius.circular(12.0);
+  
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      // 1. Контейнер для тени и формы
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: borderRadius,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 10.0,
+              spreadRadius: 2.0,
+              offset: Offset.zero, // Тень со всех сторон
+            ),
+          ],
+        ),
+        // 2. ClipRRect для обрезки изображения по той же форме
+        child: ClipRRect(
+          borderRadius: borderRadius,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 700),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            // 3. Само изображение
+            child: Image.memory(
+              currentAd.picture,
+              key: ValueKey<int>(state.currentIndex),
+              // ИЗМЕНЕНО: Заполняем пространство, обрезая лишнее, чтобы скругление и тень всегда применялись к краям картинки
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (context, error, stackTrace) =>
+                  const Center(child: Icon(Icons.error_outline, size: 50)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   _LayoutConfiguration _calculateLayout(Size availableSize, int itemCount) {
     if (itemCount == 0 || availableSize.isEmpty) {
       return const _LayoutConfiguration(columnCount: 1, ticketSize: Size.zero);
@@ -171,8 +207,6 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
         const _LayoutConfiguration(columnCount: 1, ticketSize: Size.zero);
   }
 
-  /// Область для отображения сетки талонов.
-  /// (Скопировано из waiting_screen_page.dart)
   Widget _buildTicketDisplayArea({
     required List<Ticket> tickets,
     required bool isWaiting,
@@ -235,19 +269,15 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
     );
   }
 
-  /// Виджет одного талона.
-  /// (Адаптировано из waiting_screen_page.dart для отображения номера окна)
   Widget _buildTicketItem({
     required Ticket ticket,
     required bool isWaiting,
     required Size size,
   }) {
-    // Цвет для талонов "вызывается" - желтый, как в старом дизайне заголовка
     final Color backgroundColor =
         isWaiting ? Colors.white : const Color(0xFF4CAF50);
     final Color textColor =
         isWaiting ? const Color(0xFF333333) : Colors.white;
-    // Динамический размер шрифта
     final double fontSize = size.height * (isWaiting ? 0.4 : 0.35);
 
     return SizedBox(
@@ -312,8 +342,6 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
     );
   }
 
-  /// Новый стилизованный заголовок.
-  /// (Полностью переработан для соответствия дизайну и требованиям)
   Widget _buildNewHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
@@ -332,8 +360,8 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
           ),
         ],
       ),
-      child: SizedBox( // Используется для выравнивания высоты с другим экраном
-        height: 132, // Примерная высота, подобрана для соответствия
+      child: SizedBox(
+        height: 132,
         child: Center(
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
@@ -377,9 +405,6 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
     );
   }
 
-
-  /// Заголовок со статусами очереди.
-  /// (Скопировано из waiting_screen_page.dart с измененным текстом и градиентом)
   Widget _buildQueueStatusHeader() {
     return Container(
       height: 50,
@@ -474,8 +499,6 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
     );
   }
 
-  /// Виджет для отображения ошибки.
-  /// (Скопировано из waiting_screen_page.dart)
   Widget _buildError(String message) {
     return Container(
       color: const Color(0xFFFEE2E2),

@@ -1,3 +1,5 @@
+import 'package:elqueue/administrator/presentation/blocs/ad/ad_bloc.dart';
+import 'package:elqueue/administrator/presentation/pages/ad_management_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/auth/auth_bloc.dart';
@@ -49,6 +51,22 @@ class AdminPanelPage extends StatelessWidget {
                     builder: (_) => BlocProvider.value(
                       value: BlocProvider.of<SettingsBloc>(context),
                       child: const ServerSettingsDialog(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+              // --- НОВАЯ КНОПКА УПРАВЛЕНИЯ РЕКЛАМОЙ ---
+              ElevatedButton.icon(
+                icon: const Icon(Icons.ad_units),
+                label: const Text('Управление рекламой'),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => BlocProvider.value(
+                        value: BlocProvider.of<AdBloc>(context),
+                        child: const AdManagementPage(),
+                      ),
                     ),
                   );
                 },
