@@ -1,3 +1,4 @@
+import 'package:elqueue/terminal/presentation/screens/phone_input_screen.dart';
 import 'package:flutter/material.dart';
 import '../widgets/selection_button.dart';
 import 'confirmation_screen.dart';
@@ -24,12 +25,17 @@ class _SelectionScreenState extends State<SelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'Выберите услугу',
-          style: TextStyle(fontSize: 80, fontWeight: FontWeight.normal),
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            'Выберите услугу',
+            style: TextStyle(
+                fontSize: screenWidth * 0.06, fontWeight: FontWeight.normal),
+          ),
         ),
         centerTitle: true,
         toolbarHeight: 90,
@@ -37,14 +43,16 @@ class _SelectionScreenState extends State<SelectionScreen> {
       ),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 100.0, vertical: 30.0),
+          padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.08, vertical: 30.0),
           child: FutureBuilder<List<ServiceEntity>>(
             future: _servicesFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const CircularProgressIndicator();
               } else if (snapshot.hasError) {
-                return Text('Ошибка: \n${snapshot.error}', style: const TextStyle(color: Colors.red));
+                return Text('Ошибка: \n${snapshot.error}',
+                    style: const TextStyle(color: Colors.red));
               } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                 return const Text('Нет доступных услуг');
               }
@@ -55,14 +63,18 @@ class _SelectionScreenState extends State<SelectionScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     for (final service in services)
-                      Column(
-                        children: [
-                          SimpleButton(
-                            text: service.title,
-                            onPressed: () => _navigateToConfirmation(context, service),
-                          ),
-                          const SizedBox(height: 40),
-                        ],
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20.0),
+                        child: SimpleButton(
+                          text: service.title,
+                          onPressed: () {
+                            if (service.id == 'confirm_appointment') {
+                              _navigateToPhoneInput(context, service);
+                            } else {
+                              _navigateToConfirmation(context, service);
+                            }
+                          },
+                        ),
                       ),
                   ],
                 ),
@@ -74,12 +86,23 @@ class _SelectionScreenState extends State<SelectionScreen> {
     );
   }
 
-  Future<void> _navigateToConfirmation(BuildContext context, ServiceEntity service) async {
+  void _navigateToPhoneInput(BuildContext context, ServiceEntity service) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PhoneInputScreen(service: service),
+      ),
+    );
+  }
+
+  Future<void> _navigateToConfirmation(
+      BuildContext context, ServiceEntity service) async {
     showDialog(
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.transparent,
-      builder: (dialogContext) => const Center(child: CircularProgressIndicator()),
+      builder: (dialogContext) =>
+          const Center(child: CircularProgressIndicator()),
     );
     try {
       final resp = await _api.selectService(service.id);
@@ -89,7 +112,8 @@ class _SelectionScreenState extends State<SelectionScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => ConfirmationScreen(serviceName: serviceName, serviceId: service.id),
+          builder: (_) => ConfirmationScreen(
+              serviceName: serviceName, serviceId: service.id),
         ),
       );
     } catch (e) {

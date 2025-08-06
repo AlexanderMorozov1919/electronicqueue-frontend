@@ -11,6 +11,7 @@ class TicketEntity extends Equatable {
   final DateTime createdAt;
   final DateTime? calledAt;
   final DateTime? completedAt;
+  final DateTime? appointmentTime;
 
   const TicketEntity({
     required this.id,
@@ -22,6 +23,7 @@ class TicketEntity extends Equatable {
     required this.createdAt,
     this.calledAt,
     this.completedAt,
+    this.appointmentTime,
   });
 
   TicketEntity copyWith({
@@ -34,6 +36,7 @@ class TicketEntity extends Equatable {
     DateTime? createdAt,
     DateTime? calledAt,
     DateTime? completedAt,
+    DateTime? appointmentTime,
   }) {
     return TicketEntity(
       id: id ?? this.id,
@@ -45,6 +48,7 @@ class TicketEntity extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       calledAt: calledAt ?? this.calledAt,
       completedAt: completedAt ?? this.completedAt,
+      appointmentTime: appointmentTime ?? this.appointmentTime,
     );
   }
 
@@ -59,5 +63,6 @@ class TicketEntity extends Equatable {
     createdAt,
     calledAt,
     completedAt,
+    appointmentTime,
   ];
 }

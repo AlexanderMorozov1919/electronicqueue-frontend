@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import '../../domain/entities/ticket_entity.dart';
 import '../blocs/ticket/ticket_state.dart';
 import '../blocs/ticket/ticket_bloc.dart';
 import '../blocs/ticket/ticket_event.dart';
@@ -16,45 +18,58 @@ class TicketsListSection extends StatelessWidget {
         final tickets = selectedCategory != null
             ? state.ticketsByCategory[selectedCategory] ?? []
             : [];
-
-        // *** НАЧАЛО ИЗМЕНЕНИЙ В СОРТИРОВКЕ ***
+        
+        // --- НОВАЯ ГИБРИДНАЯ ЛОГИКА СОРТИРОВКИ ---
         tickets.sort((a, b) {
-          // 1. Сортировка по статусу
+          // Функция для определения числового приоритета статуса
           int getStatusPriority(String status) {
             switch (status) {
-              case 'ожидает':
-                return 1;
-              case 'зарегистрирован':
-                return 2;
-              case 'завершен':
-                return 3;
-              default:
-                return 4;
+              case 'ожидает': return 1;
+              case 'зарегистрирован': return 2;
+              case 'завершен': return 3;
+              default: return 4;
             }
           }
 
-          final statusComparison =
-              getStatusPriority(a.status).compareTo(getStatusPriority(b.status));
+          // Функция для определения, является ли талон срочным
+          bool isTicketUrgent(TicketEntity ticket) {
+            if (ticket.status != 'ожидает' || ticket.appointmentTime == null) {
+              return false;
+            }
+            final now = DateTime.now();
+            final diff = ticket.appointmentTime!.difference(now);
+            // Срочный = опоздал ИЛИ до приема 120 минут или меньше
+            return diff.isNegative || diff.inMinutes <= 120;
+          }
 
+          // 1. Главная сортировка по статусу
+          final statusComparison = getStatusPriority(a.status).compareTo(getStatusPriority(b.status));
           if (statusComparison != 0) {
             return statusComparison;
           }
 
-          // 2. Сортировка внутри групп
-          // Если оба в ожидании, сортируем по времени создания (старые вверху)
-          if (a.status == 'ожидает' && b.status == 'ожидает') {
+          // 2. Если оба талона в статусе "ожидает", применяем под-сортировку
+          if (a.status == 'ожидает') {
+            final isAUrgent = isTicketUrgent(a);
+            final isBUrgent = isTicketUrgent(b);
+
+            // Срочный талон всегда выше обычного
+            if (isAUrgent && !isBUrgent) return -1;
+            if (!isAUrgent && isBUrgent) return 1;
+
+            // Если оба срочные, сортируем их по времени записи
+            if (isAUrgent && isBUrgent) {
+              return a.appointmentTime!.compareTo(b.appointmentTime!);
+            }
+            
+            // Если оба обычные, сортируем по времени создания
             return a.createdAt.compareTo(b.createdAt);
           }
 
-          // Для остальных статусов сортируем по времени вызова (старые вверху)
-          // Обрабатываем null значения: талоны без времени вызова будут в конце
-          if (a.calledAt == null && b.calledAt == null) return 0;
-          if (a.calledAt == null) return 1; // a идет после b
-          if (b.calledAt == null) return -1; // b идет после a
-          
-          return a.calledAt!.compareTo(b.calledAt!);
+          // 3. Для всех остальных статусов сортируем по времени создания
+          return a.createdAt.compareTo(b.createdAt);
         });
-        // *** КОНЕЦ ИЗМЕНЕНИЙ В СОРТИРОВКЕ ***
+
 
         return Card(
           color: Colors.white,
@@ -86,8 +101,19 @@ class TicketsListSection extends StatelessWidget {
                             final isSelected = selectedTicketId == ticket.id;
                             final canBeCalled = ticket.status == 'ожидает';
 
+                            // Логика для визуального выделения остается той же
+                            bool isUrgent = false;
+                            if (ticket.status == 'ожидает' && ticket.appointmentTime != null) {
+                                final now = DateTime.now();
+                                final diff = ticket.appointmentTime!.difference(now);
+                                if (diff.isNegative || diff.inMinutes <= 120) {
+                                    isUrgent = true;
+                                }
+                            }
+
                             String statusText;
                             Color statusColor;
+                            Widget? trailing;
 
                             switch (ticket.status) {
                               case 'завершен':
@@ -101,7 +127,14 @@ class TicketsListSection extends StatelessWidget {
                               case 'ожидает':
                               default:
                                 statusText = 'В ожидании';
-                                statusColor = Colors.orange;
+                                statusColor = isUrgent ? Colors.red.shade700 : Colors.orange;
+                                if (ticket.appointmentTime != null) {
+                                  trailing = Text(DateFormat('HH:mm').format(ticket.appointmentTime!),
+                                  style: TextStyle(
+                                    color: isUrgent ? Colors.red.shade700 : Colors.black,
+                                    fontWeight: isUrgent ? FontWeight.bold : FontWeight.normal
+                                  ),);
+                                }
                                 break;
                             }
 
@@ -109,6 +142,7 @@ class TicketsListSection extends StatelessWidget {
                               selected: isSelected,
                               selectedTileColor:
                                   const Color(0xFF415BE7).withOpacity(0.1),
+                              leading: isUrgent ? Icon(Icons.priority_high_rounded, color: Colors.red.shade700) : null,
                               title: Text(
                                 ticket.number,
                                 style: const TextStyle(fontSize: 16),
@@ -117,8 +151,10 @@ class TicketsListSection extends StatelessWidget {
                                 statusText,
                                 style: TextStyle(
                                   color: statusColor,
+                                  fontWeight: isUrgent ? FontWeight.bold : FontWeight.normal,
                                 ),
                               ),
+                              trailing: trailing,
                               onTap: canBeCalled
                                   ? () {
                                       context

@@ -12,6 +12,7 @@ class TicketModel extends TicketEntity {
     super.isCompleted,
     super.calledAt,
     super.completedAt,
+    super.appointmentTime,
   });
 
   factory TicketModel.fromJson(Map<String, dynamic> json) {
@@ -27,17 +28,19 @@ class TicketModel extends TicketEntity {
     final status = json['status'] as String? ?? 'ожидает';
     final idValue = json['id'] ?? json['ticket_id'];
 
-
     return TicketModel(
       id: idValue.toString(),
       number: ticketNumber,
       category: determineCategory(ticketNumber),
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
       calledAt: json['called_at'] != null
-          ? DateTime.parse(json['called_at'] as String)
+          ? DateTime.parse(json['called_at'] as String).toLocal()
           : null,
       completedAt: json['completed_at'] != null
-          ? DateTime.parse(json['completed_at'] as String)
+          ? DateTime.parse(json['completed_at'] as String).toLocal()
+          : null,
+      appointmentTime: json['appointment_time'] != null
+          ? DateTime.parse(json['appointment_time'] as String) // Убрано .toLocal()
           : null,
       status: status,
       isRegistered: status == 'зарегистрирован',
@@ -53,6 +56,7 @@ class TicketModel extends TicketEntity {
       'created_at': createdAt.toIso8601String(),
       'called_at': calledAt?.toIso8601String(),
       'completed_at': completedAt?.toIso8601String(),
+      'appointment_time': appointmentTime?.toIso8601String(),
       'status': status,
     };
   }
