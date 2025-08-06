@@ -14,6 +14,7 @@ class _SchedulePageState extends State<SchedulePage> {
   @override
   void initState() {
     super.initState();
+    // Инициируем подписку на обновления при создании страницы
     context.read<ScheduleBloc>().add(SubscribeToScheduleUpdates());
   }
 
@@ -26,18 +27,8 @@ class _SchedulePageState extends State<SchedulePage> {
         title: const Text('Расписание врачей'),
         centerTitle: true,
       ),
-      body: BlocListener<ScheduleBloc, ScheduleState>(
-        listener: (context, state) {
-          if (state is ScheduleError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content:
-                      Text('Ошибка загрузки расписания: ${state.message}')),
-            );
-          }
-        },
-        child: const ScheduleWidget(),
-      ),
+      // Убираем BlocListener, так как обработка ошибок теперь происходит внутри ScheduleWidget
+      body: const ScheduleWidget(),
     );
   }
 }

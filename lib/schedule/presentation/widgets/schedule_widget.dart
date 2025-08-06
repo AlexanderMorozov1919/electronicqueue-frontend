@@ -47,19 +47,18 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
   @override
   void initState() {
     super.initState();
-    _startTimer();
+    // Таймер будет запущен, когда придут первые данные
   }
 
-  void _startTimer() {
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
-      if (mounted) {
-        _advancePage();
-      }
-    });
+  void _startPageCycling() {
+    _timer?.cancel(); // Отменяем предыдущий таймер
+    // Запускаем одноразовый таймер, который вызовет прокрутку
+    _timer = Timer(const Duration(seconds: 10), _advancePage);
   }
 
   void _advancePage() {
+    if (!mounted) return;
+
     final scheduleState = context.read<ScheduleBloc>().state;
     if (scheduleState is! ScheduleLoaded) return;
     
@@ -94,6 +93,8 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
         _currentPage = (_currentPage + 1) % totalHorizontalPages;
       }
     });
+
+    _startPageCycling(); // Планируем следующий вызов
   }
 
   @override
@@ -177,9 +178,9 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: borderRadius,
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
-              color: const Color.fromARGB(38, 0, 0, 0),
+              color: Color.fromARGB(38, 0, 0, 0),
               blurRadius: 10.0,
               spreadRadius: 2.0,
               offset: Offset.zero,
@@ -242,7 +243,7 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
                     child: BlocConsumer<ScheduleBloc, ScheduleState>(
                       listener: (context, state) {
                         if (state is ScheduleLoaded && _timer == null) {
-                           _startTimer();
+                           _startPageCycling();
                         }
                       },
                       builder: (context, state) {
@@ -254,7 +255,7 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
                             return const Center(
                                 child: Text('На сегодня расписание отсутствует.'));
                           }
-                          return _buildScheduleContent(context, schedule, appTheme);
+                          return _buildScheduleView(context, state, appTheme);
                         } else if (state is ScheduleError) {
                           return Center(
                               child: Text(
@@ -281,6 +282,33 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
     );
   }
 
+  Widget _buildScheduleView(BuildContext context, ScheduleLoaded state, AppTheme appTheme) {
+    return Column(
+      children: [
+        Expanded(
+          child: _buildScheduleContent(context, state.schedule, appTheme),
+        ),
+        if (state.error != null)
+          Container(
+            color: Colors.redAccent,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.warning, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  'Ошибка подключения. Попытка восстановления...',
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                ),
+              ],
+            ),
+          )
+      ],
+    );
+  }
+
+
   Widget _buildScheduleContent(BuildContext context, TodayScheduleEntity schedule,
       AppTheme appTheme) {
     const double timeColumnWidth = 70.0;
@@ -306,7 +334,7 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
                 _currentPage = 0;
                 _verticalCurrentPage = 0;
               });
-              _startTimer();
+              _startPageCycling();
             }
           });
         }

@@ -9,17 +9,17 @@ abstract class ScheduleEvent extends Equatable {
 
 class SubscribeToScheduleUpdates extends ScheduleEvent {}
 
-class _ScheduleUpdated extends ScheduleEvent {
+class ScheduleUpdated extends ScheduleEvent {
   final TodayScheduleEntity schedule;
-  const _ScheduleUpdated(this.schedule);
+  const ScheduleUpdated(this.schedule);
 
   @override
   List<Object> get props => [schedule];
 }
 
-class _ScheduleErrorOccurred extends ScheduleEvent {
+class ScheduleErrorOccurred extends ScheduleEvent {
   final String message;
-  const _ScheduleErrorOccurred(this.message);
+  const ScheduleErrorOccurred(this.message);
 
   @override
   List<Object> get props => [message];

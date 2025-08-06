@@ -13,12 +13,24 @@ class ScheduleLoading extends ScheduleState {}
 
 class ScheduleLoaded extends ScheduleState {
   final TodayScheduleEntity schedule;
+  final String? error;
   final DateTime timestamp;
 
-  ScheduleLoaded(this.schedule) : timestamp = DateTime.now();
+  ScheduleLoaded(this.schedule, {this.error}) : timestamp = DateTime.now();
 
   @override
-  List<Object?> get props => [schedule, timestamp];
+  List<Object?> get props => [schedule, error, timestamp];
+
+  ScheduleLoaded copyWith({
+    TodayScheduleEntity? schedule,
+    String? error,
+    bool clearError = false,
+  }) {
+    return ScheduleLoaded(
+      schedule ?? this.schedule,
+      error: clearError ? null : error ?? this.error,
+    );
+  }
 }
 
 class ScheduleError extends ScheduleState {

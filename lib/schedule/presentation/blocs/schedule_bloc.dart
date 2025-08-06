@@ -16,38 +16,36 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
       : _getTodaySchedule = getTodaySchedule,
         super(ScheduleInitial()) {
     on<SubscribeToScheduleUpdates>(_onSubscribeToScheduleUpdates);
-    on<_ScheduleUpdated>(_onScheduleUpdated);
-    on<_ScheduleErrorOccurred>(_onScheduleErrorOccurred);
   }
 
-  void _onSubscribeToScheduleUpdates(
+  Future<void> _onSubscribeToScheduleUpdates(
     SubscribeToScheduleUpdates event,
     Emitter<ScheduleState> emit,
-  ) {
-    emit(ScheduleLoading());
+  ) async {
+    // Если мы еще не загрузили данные, показываем индикатор загрузки
+    if (state is! ScheduleLoaded) {
+      emit(ScheduleLoading());
+    }
+    
     _scheduleSubscription?.cancel();
-    _scheduleSubscription = _getTodaySchedule().listen(
-      (schedule) {
-        add(_ScheduleUpdated(schedule));
+
+    // Используем emit.forEach для более декларативной обработки потока
+    await emit.forEach<TodayScheduleEntity>(
+      _getTodaySchedule(),
+      onData: (schedule) {
+        // При получении новых данных, обновляем состояние и сбрасываем ошибку
+        return ScheduleLoaded(schedule, error: null);
       },
-      onError: (error) {
-        add(_ScheduleErrorOccurred(error.toString()));
+      onError: (error, stackTrace) {
+        final currentState = state;
+        // Если уже есть загруженные данные, показываем их вместе с ошибкой
+        if (currentState is ScheduleLoaded) {
+          return currentState.copyWith(error: error.toString());
+        }
+        // Если данных еще нет, показываем полноэкранную ошибку
+        return ScheduleError(error.toString());
       },
     );
-  }
-  
-  void _onScheduleUpdated(
-    _ScheduleUpdated event,
-    Emitter<ScheduleState> emit,
-  ) {
-    emit(ScheduleLoaded(event.schedule));
-  }
-
-  void _onScheduleErrorOccurred(
-    _ScheduleErrorOccurred event,
-    Emitter<ScheduleState> emit,
-  ) {
-    emit(ScheduleError(event.message));
   }
 
   @override
