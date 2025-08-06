@@ -11,6 +11,14 @@ class LoadAppointmentInitialData extends AppointmentEvent {
   const LoadAppointmentInitialData();
 }
 
+// Вызывается при выборе специализации из выпадающего списка.
+class AppointmentSpecializationSelected extends AppointmentEvent {
+  final String? specialization;
+  const AppointmentSpecializationSelected(this.specialization);
+  @override
+  List<Object?> get props => [specialization];
+}
+
 // Вызывается при выборе врача из выпадающего списка.
 class AppointmentDoctorSelected extends AppointmentEvent {
   final DoctorEntity? doctor;
