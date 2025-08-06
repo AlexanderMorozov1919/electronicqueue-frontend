@@ -1,13 +1,14 @@
 import 'dart:math';
-
 import 'package:elqueue/queue_reception/presentation/blocs/ad_display_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:elqueue/queue_reception/services/audio_service.dart';
 import '../../domain/entities/ticket.dart';
 import '../blocs/queue_display_bloc.dart';
 import '../blocs/queue_display_event.dart';
 import '../blocs/queue_display_state.dart';
 import '../widgets/audio_control_widget.dart';
+import '../widgets/audio_status_indicator.dart';
 
 // --- Константы для дизайна и верстки ---
 const Size _kBaseTicketSize = Size(180, 80);
@@ -41,67 +42,73 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
     return AudioControlWidget(
       child: Scaffold(
         backgroundColor: const Color(0xFFF8F9FA),
-        body: BlocBuilder<QueueDisplayBloc, QueueDisplayState>(
-          builder: (context, queueState) {
-            if (queueState is QueueDisplayError) {
-              return _buildError(queueState.message);
-            }
+        body: Stack(
+          children: [
+            BlocBuilder<QueueDisplayBloc, QueueDisplayState>(
+              builder: (context, queueState) {
+                if (queueState is QueueDisplayError) {
+                  return _buildError(queueState.message);
+                }
 
-            final tickets = (queueState is QueueDisplayLoaded) ? queueState.tickets : <Ticket>[];
-            final waitingTickets = tickets.where((t) => t.status == 'waiting').toList();
-            final calledTickets = tickets.where((t) => t.status == 'called').toList();
+                final tickets = (queueState is QueueDisplayLoaded) ? queueState.tickets : <Ticket>[];
+                final waitingTickets = tickets.where((t) => t.status == 'waiting').toList();
+                final calledTickets = tickets.where((t) => t.status == 'called').toList();
 
-            return Column(
-              children: [
-                _buildNewHeader(),
-                Expanded(
-                  child: BlocBuilder<AdDisplayBloc, AdDisplayState>(
-                    builder: (context, adState) {
-                      final bool showAds = adState.ads.isNotEmpty;
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Левая часть: Очереди и их заголовок
-                          Expanded(
-                            // Оборачиваем в Column, чтобы разместить заголовок и контент вертикально
-                            child: Column(
-                              children: [
-                                // Заголовок теперь здесь, он будет смещаться вместе с контентом
-                                _buildQueueStatusHeader(),
-                                Expanded(
-                                  // Этот Expanded нужен, чтобы Row с талонами занял все оставшееся место
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        flex: 2,
-                                        child: _buildTicketDisplayArea(tickets: waitingTickets, isWaiting: true),
+                return Column(
+                  children: [
+                    _buildNewHeader(),
+                    Expanded(
+                      child: BlocBuilder<AdDisplayBloc, AdDisplayState>(
+                        builder: (context, adState) {
+                          final bool showAds = adState.ads.isNotEmpty;
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Левая часть: Очереди и их заголовок
+                              Expanded(
+                                // Оборачиваем в Column, чтобы разместить заголовок и контент вертикально
+                                child: Column(
+                                  children: [
+                                    // Заголовок теперь здесь, он будет смещаться вместе с контентом
+                                    _buildQueueStatusHeader(),
+                                    Expanded(
+                                      // Этот Expanded нужен, чтобы Row с талонами занял все оставшееся место
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                            flex: 2,
+                                            child: _buildTicketDisplayArea(tickets: waitingTickets, isWaiting: true),
+                                          ),
+                                          Container(width: 1, color: const Color(0xFFE0E0E0)),
+                                          Expanded(
+                                            flex: 1,
+                                            child: _buildTicketDisplayArea(tickets: calledTickets, isWaiting: false),
+                                          ),
+                                        ],
                                       ),
-                                      Container(width: 1, color: const Color(0xFFE0E0E0)),
-                                      Expanded(
-                                        flex: 1,
-                                        child: _buildTicketDisplayArea(tickets: calledTickets, isWaiting: false),
-                                      ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          ),
-                          // Правая часть: Реклама (если есть)
-                          if (showAds)
-                            AspectRatio(
-                              aspectRatio: 3 / 4,
-                              child: _buildAdArea(adState),
-                            ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ],
-            );
-          },
+                              ),
+                              // Правая часть: Реклама (если есть)
+                              if (showAds)
+                                AspectRatio(
+                                  aspectRatio: 3 / 4,
+                                  child: _buildAdArea(adState),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+            // Поверх всего будет наш индикатор звука
+            AudioStatusIndicator(audioService: AudioService()),
+          ],
         ),
       ),
     );
