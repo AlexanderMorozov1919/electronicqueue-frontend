@@ -21,6 +21,7 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
     required this.patientRepository,
   }) : super(AppointmentState()) {
     on<LoadAppointmentInitialData>(_onLoadInitialData);
+    on<AppointmentSpecializationSelected>(_onSpecializationSelected);
     on<AppointmentDoctorSelected>(_onDoctorSelected);
     on<AppointmentDateChanged>(_onDateChanged);
     on<_InternalLoadScheduleEvent>(_onInternalLoadSchedule);
@@ -39,8 +40,49 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
     final doctorsResult = await appointmentRepository.getActiveDoctors();
     doctorsResult.fold(
       (failure) => emit(state.copyWith(isLoading: false, error: failure.message)),
-      (doctors) => emit(state.copyWith(isLoading: false, doctors: doctors)),
+      (doctors) {
+        final specializations = doctors.map((d) => d.specialization).toSet().toList();
+        specializations.sort();
+        specializations.insert(0, 'Все специальности');
+
+        emit(state.copyWith(
+          isLoading: false,
+          allDoctors: doctors,
+          filteredDoctors: doctors,
+          specializations: specializations,
+        ));
+      },
     );
+  }
+
+  void _onSpecializationSelected(
+      AppointmentSpecializationSelected event, Emitter<AppointmentState> emit) {
+    final newSpecialization = event.specialization;
+    final allDoctors = state.allDoctors;
+    List<DoctorEntity> filteredDoctors;
+
+    if (newSpecialization == null || newSpecialization == 'Все специальности') {
+      filteredDoctors = allDoctors;
+    } else {
+      filteredDoctors = allDoctors.where((d) => d.specialization == newSpecialization).toList();
+    }
+    
+    DoctorEntity? newSelectedDoctor = state.selectedDoctor;
+    if (newSelectedDoctor != null && !filteredDoctors.contains(newSelectedDoctor)) {
+      newSelectedDoctor = null;
+    }
+
+    emit(state.copyWith(
+      selectedSpecialization: newSpecialization,
+      filteredDoctors: filteredDoctors,
+      selectedDoctor: newSelectedDoctor,
+      clearDoctor: newSelectedDoctor == null,
+      schedule: newSelectedDoctor == null ? [] : state.schedule,
+    ));
+    
+    if (newSelectedDoctor != null) {
+      add(const _InternalLoadScheduleEvent());
+    }
   }
 
   void _onDoctorSelected(

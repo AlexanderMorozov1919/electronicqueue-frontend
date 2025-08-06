@@ -23,7 +23,6 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
   @override
   void initState() {
     super.initState();
-    // Данные теперь загружаются при создании BLoC, поэтому этот вызов здесь не нужен.
     final bloc = context.read<AppointmentBloc>();
     if (bloc.state.selectedPatient != null) {
       bloc.add(LoadPatientAppointments(bloc.state.selectedPatient!.id));
@@ -70,11 +69,8 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
             height: MediaQuery.of(context).size.height * 0.75,
             child: _buildForm(context, state),
           ),
-          // *** НАЧАЛО ИСПРАВЛЕНИЯ ***
-          // Используем actionsAlignment для расположения элементов и избавляемся от Spacer.
           actionsAlignment: MainAxisAlignment.spaceBetween,
           actions: [
-            // Первый элемент (кнопка "Записи клиента") будет слева.
             ElevatedButton.icon(
               icon: const Icon(Icons.history),
               label: const Text('Записи клиента'),
@@ -91,16 +87,15 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
                       );
                     },
             ),
-            // Второй элемент (группа кнопок) будет справа.
             Row(
-              mainAxisSize: MainAxisSize.min, // Чтобы Row не занимал все доступное место
+              mainAxisSize: MainAxisSize.min,
               children: [
                 TextButton(
                   style: TextButton.styleFrom(foregroundColor: Colors.red),
                   onPressed: () => Navigator.of(context).pop(false),
                   child: const Text('Отмена'),
                 ),
-                const SizedBox(width: 8), // Используем SizedBox для отступа
+                const SizedBox(width: 8),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4EB8A6), foregroundColor: Colors.white),
                   onPressed: (state.selectedPatient != null && _selectedSlotId != null && !state.isLoading)
@@ -116,7 +111,6 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
               ],
             ),
           ],
-          // *** КОНЕЦ ИСПРАВЛЕНИЯ ***
         );
       },
     );
@@ -136,9 +130,9 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
           children: [
             Expanded(flex: 3, child: _buildPatientSelector(context, state)),
             const SizedBox(width: 16),
-            Expanded(flex: 2, child: _buildDoctorSelector(context, state)),
+            Expanded(flex: 2, child: _buildSpecialtySelector(context, state)),
             const SizedBox(width: 16),
-            Expanded(flex: 2, child: _buildSpecialtyField(state)),
+            Expanded(flex: 2, child: _buildDoctorSelector(context, state)),
             const SizedBox(width: 16),
             Expanded(flex: 2, child: _buildDateSelector(context, state)),
           ],
@@ -152,7 +146,6 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
     );
   }
 
-  // Виджет для секции подтверждения явки
   Widget _buildConfirmationSection(BuildContext context, List<AppointmentDetailsEntity> appointments) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -215,6 +208,24 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
     );
   }
 
+  Widget _buildSpecialtySelector(BuildContext context, AppointmentState state) {
+    return DropdownButtonFormField<String>(
+      decoration: const InputDecoration(labelText: 'Специализация', border: OutlineInputBorder(), fillColor: Colors.white, filled: true),
+      value: state.selectedSpecialization ?? 'Все специальности',
+      isExpanded: true,
+      items: state.specializations.map((specialty) {
+        return DropdownMenuItem<String>(
+          value: specialty,
+          child: Text(specialty, overflow: TextOverflow.ellipsis),
+        );
+      }).toList(),
+      onChanged: (specialty) {
+        context.read<AppointmentBloc>().add(AppointmentSpecializationSelected(specialty));
+        setState(() { _selectedSlotId = null; });
+      },
+    );
+  }
+
    Widget _buildDoctorSelector(BuildContext context, AppointmentState state) {
     return DropdownButtonFormField<DoctorEntity?>(
       dropdownColor: Colors.white,
@@ -226,7 +237,7 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
           value: null,
           child: Text('Не выбрано', style: TextStyle(color: Colors.grey)),
         ),
-        ...state.doctors.map((doctor) {
+        ...state.filteredDoctors.map((doctor) {
           return DropdownMenuItem<DoctorEntity>(
             value: doctor,
             child: Tooltip(
@@ -243,19 +254,6 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
         context.read<AppointmentBloc>().add(AppointmentDoctorSelected(doctor));
         setState(() { _selectedSlotId = null; });
       },
-    );
-  }
-
-  Widget _buildSpecialtyField(AppointmentState state) {
-    return TextFormField(
-      readOnly: true,
-      decoration: InputDecoration(
-        labelText: 'Специализация',
-        border: const OutlineInputBorder(),
-        filled: true,
-        fillColor: Colors.white,
-      ),
-      controller: TextEditingController(text: state.selectedDoctor?.specialization ?? ''),
     );
   }
 
