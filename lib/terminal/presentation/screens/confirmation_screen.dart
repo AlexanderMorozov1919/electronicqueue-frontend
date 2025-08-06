@@ -4,16 +4,19 @@ import '../widgets/confirmation_button.dart';
 import 'printing_screen.dart';
 import 'digital_ticket_screen.dart';
 
-/// Экран подтверждения действия пользователя (печать или электронный талон).
 class ConfirmationScreen extends StatefulWidget {
   final String serviceName;
-  final String serviceId;
+  final String? serviceId;
+  final String? ticketNumber;
+  final int? timeout;
 
   const ConfirmationScreen({
     required this.serviceName,
-    required this.serviceId,
+    this.serviceId,
+    this.ticketNumber,
+    this.timeout,
     super.key,
-  });
+  }) : assert(serviceId != null || ticketNumber != null);
 
   @override
   State<ConfirmationScreen> createState() => _ConfirmationScreenState();
@@ -29,22 +32,36 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
       _loading = true;
       _error = null;
     });
+
     try {
-      final resp = await _api.confirmAction(widget.serviceId, action);
-      final ticketNumber = resp['ticket_number'] ?? '';
-      final timeout = resp['timeout'] ?? 15;
+      String finalTicketNumber;
+      int finalTimeout;
+
+      if (widget.ticketNumber != null) {
+        // Талон уже создан (пришли с экрана ввода телефона)
+        finalTicketNumber = widget.ticketNumber!;
+        finalTimeout = widget.timeout ?? 15;
+      } else {
+        // Талон нужно создать (пришли с экрана выбора услуг)
+        final resp = await _api.confirmAction(widget.serviceId!, action);
+        finalTicketNumber = resp['ticket_number'] ?? '';
+        finalTimeout = resp['timeout'] ?? 15;
+      }
+
       if (!mounted) return;
+
       final nextScreen = action == 'print_ticket'
           ? PrintingScreen(
               serviceName: widget.serviceName,
-              ticketNumber: ticketNumber,
-              timeout: timeout,
+              ticketNumber: finalTicketNumber,
+              timeout: finalTimeout,
             )
           : DigitalTicketScreen(
               serviceName: widget.serviceName,
-              ticketNumber: ticketNumber,
-              timeout: timeout,
+              ticketNumber: finalTicketNumber,
+              timeout: finalTimeout,
             );
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => nextScreen),
@@ -54,9 +71,11 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
         _error = e.toString();
       });
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -70,52 +89,62 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
         toolbarHeight: 90,
         backgroundColor: Colors.white,
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 100),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Вы выбрали: ${widget.serviceName}',
-                  style: const TextStyle(fontSize: 100),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 60),
-                const Text('Печатать талон?', style: TextStyle(fontSize: 100)),
-                const SizedBox(height: 60),
-                if (_error != null)
-                  Text(_error!, style: const TextStyle(color: Colors.red)),
-                Stack(
-                  alignment: Alignment.center,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final double titleFontSize = constraints.maxWidth * 0.08;
+          final double questionFontSize = constraints.maxWidth * 0.07;
+          final double spacing = constraints.maxHeight * 0.05;
+
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                  horizontal: constraints.maxWidth * 0.05),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Text(
+                      'Вы выбрали: ${widget.serviceName}',
+                      style: TextStyle(fontSize: titleFontSize),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: spacing),
+                    Text('Печатать талон?',
+                        style: TextStyle(fontSize: questionFontSize)),
+                    SizedBox(height: spacing),
+                    if (_error != null)
+                      Text(_error!, style: const TextStyle(color: Colors.red)),
+                    Stack(
+                      alignment: Alignment.center,
                       children: [
-                        ConfirmationButton(
-                          text: 'Да',
-                          onPressed: () => _confirm('print_ticket'),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ConfirmationButton(
+                              text: 'Да',
+                              onPressed: () => _confirm('print_ticket'),
+                            ),
+                            SizedBox(width: constraints.maxWidth * 0.05),
+                            ConfirmationButton(
+                              text: 'Нет',
+                              onPressed: () => _confirm('digital_ticket'),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 100),
-                        ConfirmationButton(
-                          text: 'Нет',
-                          onPressed: () => _confirm('digital_ticket'),
-                        ),
+                        if (_loading)
+                          Container(
+                            color: const Color.fromRGBO(255, 255, 255, 0.7),
+                            child: const CircularProgressIndicator(),
+                          ),
                       ],
                     ),
-                    if (_loading)
-                      Container(
-                        color: const Color.fromRGBO(255, 255, 255, 0.7),
-                        child: const CircularProgressIndicator(),
-                      ),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

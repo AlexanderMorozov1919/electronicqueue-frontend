@@ -19,24 +19,30 @@ class _SimpleButtonState extends State<SimpleButton> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) => setState(() => _isPressed = false),
       onTapCancel: () => setState(() => _isPressed = false),
       onTap: widget.onPressed,
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.7,
-        height: 150,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: screenWidth * 0.8,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         decoration: BoxDecoration(
-          color: _isPressed
-              ? const Color(0xFF203AC6)
-              : const Color(0xFF415BE7), 
+          color: _isPressed ? const Color(0xFF203AC6) : const Color(0xFF415BE7),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Center(
-          child: Text(
-            widget.text,
-            style: const TextStyle(color: Colors.white, fontSize: 100),
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: Text(
+              widget.text,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: screenWidth * 0.06,
+              ),
+            ),
           ),
         ),
       ),

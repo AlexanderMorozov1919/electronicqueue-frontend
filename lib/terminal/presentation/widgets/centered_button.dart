@@ -21,6 +21,8 @@ class _CenteredButtonState extends State<CenteredButton> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Center(
       child: GestureDetector(
         onTapDown: (_) => setState(() => _isPressed = true),
@@ -29,16 +31,23 @@ class _CenteredButtonState extends State<CenteredButton> {
         onTap: widget.onPressed,
         child: AnimatedContainer(
           duration: widget.animationDuration,
-          padding: const EdgeInsets.all(30),
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.05,
+            vertical: screenWidth * 0.03,
+          ),
           decoration: BoxDecoration(
-            color: _isPressed 
-                ? const Color(0xFF203AC6) 
-                : const Color(0xFF415BE7),
+            color: _isPressed ? const Color(0xFF203AC6) : const Color(0xFF415BE7),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Text(
-            widget.text,
-            style: const TextStyle(color: Colors.white, fontSize: 100),
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: Text(
+              widget.text,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: screenWidth * 0.08,
+              ),
+            ),
           ),
         ),
       ),
