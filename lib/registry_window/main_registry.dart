@@ -27,6 +27,7 @@ import 'domain/usecases/register_current_ticket.dart';
 import 'data/services/auth_token_service.dart';
 import 'presentation/pages/auth_dispatcher.dart';
 import 'presentation/pages/ticket_queue_page.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -106,7 +107,6 @@ class MyApp extends StatelessWidget {
               patientRepository: context.read<PatientRepository>(),
             ),
           ),
-          // НОВАЯ РЕГИСТРАЦИЯ BLOC
           BlocProvider(
             create: (context) => ReportBloc(
               ticketRepository: context.read<TicketRepository>(),
@@ -120,6 +120,15 @@ class MyApp extends StatelessWidget {
             primarySwatch: Colors.blue,
             fontFamily: 'Roboto',
           ),
+          locale: const Locale('ru'),
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('ru'),
+          ],
           home: const AuthDispatcher(),
           routes: {
             '/login': (context) => const AuthDispatcher(),
