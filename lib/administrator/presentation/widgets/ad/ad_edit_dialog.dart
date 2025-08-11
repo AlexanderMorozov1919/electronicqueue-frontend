@@ -42,6 +42,10 @@ class _AdEditDialogState extends State<AdEditDialog> {
   VideoPlayerController? _videoController;
   String? _videoObjectUrl;
 
+  // Списки поддерживаемых расширений
+  static const _supportedImageExtensions = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'};
+  static const _supportedVideoExtensions = {'mp4'};
+
   @override
   void initState() {
     super.initState();
@@ -113,15 +117,21 @@ class _AdEditDialogState extends State<AdEditDialog> {
 
   Future<void> _pickMedia() async {
     final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom, // Используем кастомный тип, чтобы выбрать любой файл
-      allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'mp4'],
+      type: FileType.custom,
+      allowedExtensions: [..._supportedImageExtensions, ..._supportedVideoExtensions],
       withData: true,
     );
+
     if (result != null && result.files.single.bytes != null) {
-      // Автоматически определяем тип медиа по расширению
       final file = result.files.single;
       final ext = file.extension?.toLowerCase();
-      final newType = (ext == 'mp4') ? MediaType.video : MediaType.image;
+      
+      if (ext == null || !(_supportedImageExtensions.contains(ext) || _supportedVideoExtensions.contains(ext))) {
+        _showInvalidFileTypeDialog();
+        return;
+      }
+      
+      final newType = _supportedVideoExtensions.contains(ext) ? MediaType.video : MediaType.image;
       
       setState(() {
         _selectedMediaType = newType;
@@ -140,6 +150,27 @@ class _AdEditDialogState extends State<AdEditDialog> {
         _disposeVideoPlayer();
       }
     });
+  }
+
+  // ИСПРАВЛЕНИЕ: Замена SnackBar на AlertDialog
+  void _showInvalidFileTypeDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Неверный формат файла'),
+          content: const Text('Не поддерживается тип файла, который вы загрузили.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _handleSubmit() {
@@ -199,8 +230,8 @@ class _AdEditDialogState extends State<AdEditDialog> {
           const SizedBox(height: 4),
           Text(
             isImageType 
-              ? 'Поддерживаемые форматы изображений: PNG, JPG, GIF, WEBP, BMP'
-              : 'Поддерживаемый формат видео: MP4',
+              ? 'Поддерживаемые типы: PNG, JPG, GIF, WEBP, BMP'
+              : 'Поддерживаемый тип: MP4',
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 12, color: Colors.grey),
           ),
@@ -213,7 +244,6 @@ class _AdEditDialogState extends State<AdEditDialog> {
     Uint8List? currentBytes = _newMediaBytes;
     MediaType currentType = _selectedMediaType;
 
-    // Если новый файл не выбран, пытаемся показать исходный, если тип совпадает
     if (currentBytes == null && _selectedMediaType == _initialMediaType) {
       currentBytes = _initialMediaType == MediaType.image ? _initialImageBytes : _initialVideoBytes;
     }
@@ -230,11 +260,13 @@ class _AdEditDialogState extends State<AdEditDialog> {
     }
 
     if (currentType == MediaType.video && _videoController != null && _videoController!.value.isInitialized) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: AspectRatio(
-          aspectRatio: _videoController!.value.aspectRatio,
-          child: VideoPlayer(_videoController!),
+      return IgnorePointer(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: AspectRatio(
+            aspectRatio: _videoController!.value.aspectRatio,
+            child: VideoPlayer(_videoController!),
+          ),
         ),
       );
     }
@@ -259,10 +291,9 @@ class _AdEditDialogState extends State<AdEditDialog> {
                   if (_selectedMediaType != newType) {
                     setState(() {
                       _selectedMediaType = newType;
-                      _newMediaBytes = null; // Сбрасываем выбранный файл при смене типа
+                      _newMediaBytes = null;
                       _newFileName = null;
                       
-                      // Если новый тип совпадает с исходным, восстанавливаем видеоплеер
                       if (newType == _initialMediaType && newType == MediaType.video && _initialVideoBytes != null) {
                           _initializeVideoPlayer(_initialVideoBytes!);
                       } else {
@@ -289,10 +320,15 @@ class _AdEditDialogState extends State<AdEditDialog> {
                   if (detail.files.isNotEmpty) {
                     final file = detail.files.first;
                     final ext = file.name.split('.').last.toLowerCase();
+                    
+                    if (!(_supportedImageExtensions.contains(ext) || _supportedVideoExtensions.contains(ext))) {
+                       _showInvalidFileTypeDialog();
+                       return;
+                    }
+
                     final bytes = await file.readAsBytes();
                     setState(() {
-                       // Автоматически переключаем тип на основе расширения
-                       _selectedMediaType = (ext == 'mp4') ? MediaType.video : MediaType.image;
+                       _selectedMediaType = _supportedVideoExtensions.contains(ext) ? MediaType.video : MediaType.image;
                     });
                     _handleMediaSelected(bytes, file.name);
                   }
