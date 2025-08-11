@@ -18,7 +18,7 @@ class AdDisplayBloc extends Bloc<AdDisplayEvent, AdDisplayState> {
 
   AdDisplayBloc({required this.repository}) : super(const AdDisplayState()) {
     on<FetchEnabledAds>(_onFetchEnabledAds);
-    on<_ShowNextAd>(_onShowNextAd);
+    on<ShowNextAd>(_onShowNextAd);
   }
 
   Future<void> _onFetchEnabledAds(FetchEnabledAds event, Emitter<AdDisplayState> emit) async {
@@ -48,7 +48,7 @@ class AdDisplayBloc extends Bloc<AdDisplayEvent, AdDisplayState> {
     _startAdCycle();
   }
 
-  void _onShowNextAd(_ShowNextAd event, Emitter<AdDisplayState> emit) {
+  void _onShowNextAd(ShowNextAd event, Emitter<AdDisplayState> emit) {
     if (state.ads.isEmpty || _currentScreen == null) return;
 
     final nextIndex = state.currentIndex + 1;
@@ -77,8 +77,16 @@ class AdDisplayBloc extends Bloc<AdDisplayEvent, AdDisplayState> {
     final index = state.currentIndex.clamp(0, state.ads.length - 1);
     final currentAd = state.ads[index];
     
+    // Логика таймера для изображений перенесена в AdContentPlayer
+    // Здесь мы просто инициируем показ, а виджет сам сообщит, когда закончит
+    // Этот метод теперь нужен только для первоначального запуска после загрузки
+    if (currentAd.mediaType != 'image') {
+       // Для видео таймер не нужен, виджет сам переключит
+       return;
+    }
+
     _adTimer = Timer(Duration(seconds: currentAd.durationSec), () {
-      if (!isClosed) add(_ShowNextAd());
+      if (!isClosed) add(ShowNextAd());
     });
   }
 

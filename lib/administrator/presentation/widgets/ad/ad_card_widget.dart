@@ -1,14 +1,17 @@
 import 'dart:convert';
-import 'package:elqueue/administrator/data/datasource/ad_remote_data_source.dart';
+import 'dart:typed_data';
+import 'package:elqueue/administrator/domain/repositories/ad_repository.dart';
+import 'package:elqueue/administrator/domain/usecases/manage_ads.dart';
+import 'package:flutter/foundation.dart';
+import 'package:video_player/video_player.dart';
 import 'package:elqueue/administrator/domain/entities/ad_entity.dart';
 import 'package:elqueue/administrator/presentation/blocs/ad/ad_bloc.dart';
 import 'package:elqueue/administrator/presentation/widgets/ad/ad_edit_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:http/http.dart' as http;
+import 'package:dartz/dartz.dart' as dartz;
+import 'dart:html' as html;
 
-
-// ИСПРАВЛЕНИЕ: Превращаем в StatefulWidget для ленивой загрузки
 class AdCardWidget extends StatefulWidget {
   final AdEntity ad;
   const AdCardWidget({super.key, required this.ad});
@@ -18,41 +21,104 @@ class AdCardWidget extends StatefulWidget {
 }
 
 class _AdCardWidgetState extends State<AdCardWidget> {
-  String? _pictureBase64;
+  AdEntity? _fullAd;
   bool _isLoading = false;
+  VideoPlayerController? _videoController;
+  String? _videoObjectUrl;
 
   @override
   void initState() {
     super.initState();
-    // Если картинки нет, загружаем ее
-    if (widget.ad.picture == null || widget.ad.picture!.isEmpty) {
-      _fetchAdPicture();
-    } else {
-      _pictureBase64 = widget.ad.picture;
+    _fullAd = widget.ad;
+    // Если тип медиа определен, но самих данных нет - дозагружаем
+    if ((widget.ad.mediaType == 'image' && (widget.ad.picture == null || widget.ad.picture!.isEmpty)) ||
+        (widget.ad.mediaType == 'video' && (widget.ad.video == null || widget.ad.video!.isEmpty))) {
+      _fetchAdMedia();
+    } else if (widget.ad.mediaType == 'video' && widget.ad.video != null) {
+      _initializeVideoPlayer(_safeBase64Decode(widget.ad.video!));
     }
   }
 
-  Future<void> _fetchAdPicture() async {
+  // Улучшенная функция декодирования
+  Uint8List _safeBase64Decode(String source) {
+    try {
+      return base64Decode(source);
+    } catch (e) {
+      print("Error decoding base64 string: $e");
+      return Uint8List(0); // Возвращаем пустой список байт в случае ошибки
+    }
+  }
+
+  Future<void> _initializeVideoPlayer(Uint8List videoBytes) async {
+    if (kIsWeb && videoBytes.isNotEmpty) {
+      _disposeVideoPlayer(); // Очищаем предыдущий контроллер
+      final blob = html.Blob([videoBytes], 'video/mp4');
+      _videoObjectUrl = html.Url.createObjectUrlFromBlob(blob);
+      _videoController = VideoPlayerController.networkUrl(Uri.parse(_videoObjectUrl!))
+        ..initialize().then((_) {
+          if (mounted) {
+            setState(() {});
+            _videoController?.setLooping(true);
+            _videoController?.setVolume(0);
+            _videoController?.play();
+          }
+        });
+    }
+  }
+
+  void _disposeVideoPlayer() {
+    _videoController?.dispose();
+    _videoController = null;
+    if (_videoObjectUrl != null) {
+      html.Url.revokeObjectUrl(_videoObjectUrl!);
+      _videoObjectUrl = null;
+    }
+  }
+
+  Future<void> _fetchAdMedia() async {
     if (widget.ad.id == null) return;
     setState(() => _isLoading = true);
     try {
-      // Напрямую обращаемся к DataSource для простоты
-      final dataSource = AdRemoteDataSourceImpl(client: http.Client());
-      final fullAd = await dataSource.getAdById(widget.ad.id!);
+      // Получаем репозиторий из контекста
+      final adRepository = context.read<AdRepository>();
+      final getAdById = GetAdById(adRepository);
+      final dartz.Either<dynamic, AdEntity> result = await getAdById(widget.ad.id!);
+
       if (mounted) {
-        setState(() {
-          _pictureBase64 = fullAd.picture;
-          _isLoading = false;
-        });
+        result.fold(
+          (failure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Ошибка загрузки медиа: ${failure.message}')),
+            );
+            setState(() => _isLoading = false);
+          },
+          (fetchedAd) {
+            setState(() {
+              _fullAd = fetchedAd;
+              if (fetchedAd.mediaType == 'video' && fetchedAd.video != null) {
+                _initializeVideoPlayer(_safeBase64Decode(fetchedAd.video!));
+              }
+              _isLoading = false;
+            });
+          },
+        );
       }
     } catch (e) {
       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Не удалось загрузить медиа: $e')),
+        );
         setState(() => _isLoading = false);
       }
-      print("Failed to load picture for ad ${widget.ad.id}: $e");
     }
   }
-  
+
+  @override
+  void dispose() {
+    _disposeVideoPlayer();
+    super.dispose();
+  }
+
   void _showDeleteConfirmation(BuildContext context) {
     showDialog(
       context: context,
@@ -83,51 +149,53 @@ class _AdCardWidgetState extends State<AdCardWidget> {
       context: context,
       builder: (dialogContext) => BlocProvider.value(
         value: context.read<AdBloc>(),
-        // Передаем AdEntity с уже загруженной картинкой
-        child: AdEditDialog(ad: widget.ad.copyWith(picture: _pictureBase64)),
-      )
+        child: AdEditDialog(ad: _fullAd),
+      ),
     ).then((_) {
-      // Обновляем картинку после редактирования, если нужно
-      context.read<AdBloc>().add(LoadAds());
+       context.read<AdBloc>().add(LoadAds());
     });
   }
-  
-  void _showImagePreview(BuildContext context) {
-    if (_pictureBase64 == null) return;
-    showDialog(context: context, builder: (_) => Dialog(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        child: Image.memory(base64Decode(_pictureBase64!)),
-      ),
-    ));
-  }
 
+  void _showPreview(BuildContext context) {
+    if (_fullAd == null) return;
+    final adData = _fullAd!;
+
+    Widget content;
+    if (adData.mediaType == 'image' && adData.picture != null && adData.picture!.isNotEmpty) {
+      content = Image.memory(_safeBase64Decode(adData.picture!));
+    } else if (adData.mediaType == 'video' && adData.video != null && adData.video!.isNotEmpty) {
+      content = _VideoPreviewDialog(videoBytes: _safeBase64Decode(adData.video!));
+    } else {
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          child: content,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final adData = _fullAd ?? widget.ad;
+
     return Card(
       elevation: 4,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Stack(
         children: [
-          // Image
           Positioned.fill(
             child: InkWell(
-              onTap: () => _showImagePreview(context),
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _pictureBase64 != null && _pictureBase64!.isNotEmpty
-                      ? Image.memory(
-                          base64Decode(_pictureBase64!),
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(Icons.error, color: Colors.red),
-                        )
-                      : const Center(child: Icon(Icons.image_not_supported, color: Colors.grey)),
+              onTap: () => _showPreview(context),
+              child: _buildMediaContent(adData),
             ),
           ),
-          // Gradient overlay for text
           Positioned(
             bottom: 0,
             left: 0,
@@ -143,7 +211,6 @@ class _AdCardWidgetState extends State<AdCardWidget> {
               ),
             ),
           ),
-          // Controls
           Positioned(
             top: 4,
             right: 4,
@@ -173,21 +240,126 @@ class _AdCardWidgetState extends State<AdCardWidget> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Chip(
-                  avatar: const Icon(Icons.timer_outlined, color: Colors.white),
-                  label: Text('${widget.ad.durationSec} сек', style: const TextStyle(color: Colors.white)),
+                  avatar: Icon(
+                      adData.mediaType == 'video' ? Icons.repeat : Icons.timer_outlined,
+                      color: Colors.white),
+                  label: Text(
+                      adData.mediaType == 'video' ? '${adData.repeatCount} раз' : '${adData.durationSec} сек',
+                      style: const TextStyle(color: Colors.white)),
                   backgroundColor: Colors.black54,
                 ),
                 Switch(
-                  value: widget.ad.isEnabled,
+                  value: adData.isEnabled,
                   onChanged: (newValue) {
-                    context.read<AdBloc>().add(
-                        UpdateAdInfo(widget.ad.copyWith(isEnabled: newValue, picture: _pictureBase64)));
+                    context.read<AdBloc>().add(UpdateAdInfo(adData.copyWith(isEnabled: newValue)));
                   },
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMediaContent(AdEntity adData) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (adData.mediaType == 'image' && adData.picture != null && adData.picture!.isNotEmpty) {
+      final imageBytes = _safeBase64Decode(adData.picture!);
+      if (imageBytes.isEmpty) {
+        return const Icon(Icons.broken_image, color: Colors.red, size: 60);
+      }
+      return Image.memory(imageBytes,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, color: Colors.red, size: 60));
+    }
+    if (adData.mediaType == 'video' && _videoController != null && _videoController!.value.isInitialized) {
+      // ИСПРАВЛЕНИЕ: Оборачиваем плеер в IgnorePointer
+      return IgnorePointer(
+        child: SizedBox.expand(
+            child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                    width: _videoController!.value.size.width,
+                    height: _videoController!.value.size.height,
+                    child: VideoPlayer(_videoController!)))),
+      );
+    }
+    return Center(child: Icon(adData.mediaType == 'video' ? Icons.videocam : Icons.image_not_supported, color: Colors.grey, size: 60));
+  }
+}
+
+class _VideoPreviewDialog extends StatefulWidget {
+  final Uint8List videoBytes;
+  const _VideoPreviewDialog({required this.videoBytes});
+
+  @override
+  State<_VideoPreviewDialog> createState() => _VideoPreviewDialogState();
+}
+
+class _VideoPreviewDialogState extends State<_VideoPreviewDialog> {
+  VideoPlayerController? _controller;
+  String? _videoObjectUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb && widget.videoBytes.isNotEmpty) {
+      final blob = html.Blob([widget.videoBytes], 'video/mp4');
+      _videoObjectUrl = html.Url.createObjectUrlFromBlob(blob);
+      _controller = VideoPlayerController.networkUrl(Uri.parse(_videoObjectUrl!))
+        ..initialize().then((_) {
+          if(mounted) setState(() {});
+          _controller?.play();
+        });
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    if (_videoObjectUrl != null) {
+      html.Url.revokeObjectUrl(_videoObjectUrl!);
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_controller != null && _controller!.value.isInitialized) {
+      return AspectRatio(
+        aspectRatio: _controller!.value.aspectRatio,
+        child: Stack(
+          alignment: Alignment.bottomCenter,
+          children: [
+            VideoPlayer(_controller!),
+            VideoProgressIndicator(_controller!, allowScrubbing: true),
+            _buildControls(),
+          ],
+        ),
+      );
+    }
+    return const Center(child: CircularProgressIndicator());
+  }
+  
+  Widget _buildControls() {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _controller!.value.isPlaying ? _controller!.pause() : _controller!.play();
+        });
+      },
+      child: Container(
+        color: Colors.transparent, 
+        child: Center(
+          child: AnimatedOpacity(
+            opacity: _controller!.value.isPlaying ? 0.0 : 1.0,
+            duration: const Duration(milliseconds: 300),
+            child: const Icon(Icons.play_arrow, size: 60, color: Colors.white),
+          ),
+        ),
       ),
     );
   }

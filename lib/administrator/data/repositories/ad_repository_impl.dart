@@ -21,6 +21,16 @@ class AdRepositoryImpl implements AdRepository {
   }
 
   @override
+  Future<Either<Failure, AdEntity>> getAdById(int id) async {
+    try {
+      final ad = await remoteDataSource.getAdById(id);
+      return Right(ad);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
+  }
+
+  @override
   Future<Either<Failure, AdEntity>> createAd(AdEntity ad) async {
     try {
       final newAd = await remoteDataSource.createAd(ad);

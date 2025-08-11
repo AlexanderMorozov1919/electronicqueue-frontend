@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:elqueue/queue_reception/presentation/blocs/ad_display_bloc.dart';
+import 'package:elqueue/queue_reception/presentation/widgets/ad_content_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:elqueue/queue_reception/services/audio_service.dart';
@@ -18,7 +19,8 @@ const double _kOuterPadding = 16.0;
 class _LayoutConfiguration {
   final int columnCount;
   final Size ticketSize;
-  const _LayoutConfiguration({required this.columnCount, required this.ticketSize});
+  const _LayoutConfiguration(
+      {required this.columnCount, required this.ticketSize});
 }
 
 class QueueDisplayPage extends StatefulWidget {
@@ -33,7 +35,9 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<QueueDisplayBloc>().add(LoadTicketsEvent());
-      context.read<AdDisplayBloc>().add(const FetchEnabledAds(screen: 'reception'));
+      context
+          .read<AdDisplayBloc>()
+          .add(const FetchEnabledAds(screen: 'reception'));
     });
   }
 
@@ -50,9 +54,13 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
                   return _buildError(queueState.message);
                 }
 
-                final tickets = (queueState is QueueDisplayLoaded) ? queueState.tickets : <Ticket>[];
-                final waitingTickets = tickets.where((t) => t.status == 'waiting').toList();
-                final calledTickets = tickets.where((t) => t.status == 'called').toList();
+                final tickets = (queueState is QueueDisplayLoaded)
+                    ? queueState.tickets
+                    : <Ticket>[];
+                final waitingTickets =
+                    tickets.where((t) => t.status == 'waiting').toList();
+                final calledTickets =
+                    tickets.where((t) => t.status == 'called').toList();
 
                 return Column(
                   children: [
@@ -74,16 +82,23 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
                                     Expanded(
                                       // Этот Expanded нужен, чтобы Row с талонами занял все оставшееся место
                                       child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Expanded(
                                             flex: 2,
-                                            child: _buildTicketDisplayArea(tickets: waitingTickets, isWaiting: true),
+                                            child: _buildTicketDisplayArea(
+                                                tickets: waitingTickets,
+                                                isWaiting: true),
                                           ),
-                                          Container(width: 1, color: const Color(0xFFE0E0E0)),
+                                          Container(
+                                              width: 1,
+                                              color: const Color(0xFFE0E0E0)),
                                           Expanded(
                                             flex: 1,
-                                            child: _buildTicketDisplayArea(tickets: calledTickets, isWaiting: false),
+                                            child: _buildTicketDisplayArea(
+                                                tickets: calledTickets,
+                                                isWaiting: false),
                                           ),
                                         ],
                                       ),
@@ -118,13 +133,12 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
     if (state.ads.isEmpty) {
       return const SizedBox.shrink();
     }
-  
+
     final currentAd = state.ads[state.currentIndex];
     final borderRadius = BorderRadius.circular(12.0);
-  
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      // 1. Контейнер для тени и формы
       child: Container(
         decoration: BoxDecoration(
           borderRadius: borderRadius,
@@ -133,11 +147,10 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
               color: const Color.fromARGB(38, 0, 0, 0),
               blurRadius: 10.0,
               spreadRadius: 2.0,
-              offset: Offset.zero, // Тень со всех сторон
+              offset: Offset.zero,
             ),
           ],
         ),
-        // 2. ClipRRect для обрезки изображения по той же форме
         child: ClipRRect(
           borderRadius: borderRadius,
           child: AnimatedSwitcher(
@@ -145,16 +158,9 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
             transitionBuilder: (Widget child, Animation<double> animation) {
               return FadeTransition(opacity: animation, child: child);
             },
-            // 3. Само изображение
-            child: Image(
-              image: currentAd.picture,
+            child: AdContentPlayer(
               key: ValueKey<int>(currentAd.id),
-              // ИЗМЕНЕНО: Заполняем пространство, обрезая лишнее, чтобы скругление и тень всегда применялись к краям картинки
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (context, error, stackTrace) =>
-                  const Center(child: Icon(Icons.error_outline, size: 50)),
+              ad: currentAd,
             ),
           ),
         ),
@@ -225,7 +231,9 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
           if (tickets.isEmpty) {
             return Center(
               child: Text(
-                isWaiting ? 'Нет пациентов в очереди' : 'Нет вызываемых талонов',
+                isWaiting
+                    ? 'Нет пациентов в очереди'
+                    : 'Нет вызываемых талонов',
                 style: TextStyle(fontSize: 18, color: Colors.grey[600]),
               ),
             );
@@ -354,7 +362,11 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [const Color(0xFF1B4193), const Color(0xFF2563EB), const Color(0xFF3B82F6)],
+          colors: [
+            const Color(0xFF1B4193),
+            const Color(0xFF2563EB),
+            const Color(0xFF3B82F6)
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -375,7 +387,8 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
             decoration: BoxDecoration(
               color: Colors.white10,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color.fromARGB(51, 255, 255, 255), width: 1),
+              border: Border.all(
+                  color: const Color.fromARGB(51, 255, 255, 255), width: 1),
               boxShadow: [
                 BoxShadow(
                   color: Colors.white10,
@@ -439,7 +452,11 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [const Color(0xFF1B4193), const Color(0xFF2563EB), const Color(0xFF3B82F6)],
+                  colors: [
+                    const Color(0xFF1B4193),
+                    const Color(0xFF2563EB),
+                    const Color(0xFF3B82F6)
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -524,7 +541,8 @@ class _QueueDisplayPageState extends State<QueueDisplayPage> {
             const SizedBox(height: 10),
             Text(message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 18, color: Color(0xFFB91C1C))),
+                style:
+                    const TextStyle(fontSize: 18, color: Color(0xFFB91C1C))),
             const SizedBox(height: 20),
             const Text('Попытка переподключения через 5 секунд...',
                 style: TextStyle(fontSize: 16, color: Color(0xFF991B1B))),
