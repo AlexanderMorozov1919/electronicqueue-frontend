@@ -8,7 +8,7 @@ class QueueHeader extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20),
       decoration: BoxDecoration(
-        color: Colors.blue[800],
+        color: const Color(0xFF415BE7),
       ),
       child: const Center(
         child: Text(

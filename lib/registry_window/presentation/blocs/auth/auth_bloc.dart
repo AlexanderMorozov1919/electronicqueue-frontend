@@ -8,13 +8,16 @@ part 'auth_event.dart';
 part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
+  int? _windowNumber;
   final AuthenticateUser authenticateUser;
 
   final AuthRepository authRepository;
+  int? get windowNumber => _windowNumber;
 
   AuthBloc({required this.authenticateUser, required this.authRepository}) : super(AuthInitial()) {
     on<LoginButtonPressed>(_onLoginButtonPressed);
     on<LogoutRequested>(_onLogoutRequested);
+    on<AuthSessionRestored>(_onAuthSessionRestored);
   }
 
   Future<void> _onLoginButtonPressed(
@@ -26,7 +29,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final result = await authenticateUser(event.authEntity);
       result.fold(
         (failure) => emit(AuthError(failure.message)),
-        (_) => emit(AuthSuccess()),
+        (success) {
+          final login = event.authEntity.login;
+          final windowNum = int.tryParse(login.replaceAll(RegExp(r'[^0-9]'), ''));
+          _windowNumber = windowNum ?? 1;
+          emit(AuthSuccess());
+        },
       );
     } catch (e) {
       emit(AuthError('Произошла ошибка при авторизации'));
@@ -39,5 +47,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     await authRepository.logout();
     emit(AuthInitial());
+  }
+
+  void _onAuthSessionRestored(
+    AuthSessionRestored event,
+    Emitter<AuthState> emit,
+  ) {
+    // Просто переводим BLoC в состояние успеха. Данные пользователя нам здесь не важны,
+    // так как окно регистратора их не отображает.
+    emit(AuthSuccess());
   }
 }

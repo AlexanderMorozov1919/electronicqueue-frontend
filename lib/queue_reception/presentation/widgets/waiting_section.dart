@@ -17,7 +17,8 @@ class WaitingSection extends StatelessWidget {
         return Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey),
+            border: Border.all(color: const Color(0xFFA1A8B8)),
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
             children: [

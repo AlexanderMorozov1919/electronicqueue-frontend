@@ -1,4 +1,5 @@
 enum TicketCategory {
+  all('Все категории'),
   byAppointment('Прием по записи'),
   makeAppointment('Запись на прием'),
   tests('Анализы'),

@@ -34,7 +34,7 @@ class QueueActionButtons extends StatelessWidget {
         width: double.infinity,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: isBreakActive ? Colors.green : Colors.orange,
+            backgroundColor: isBreakActive ? const Color(0xFF4EB8A6) : const Color(0xFFFFA100),
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),

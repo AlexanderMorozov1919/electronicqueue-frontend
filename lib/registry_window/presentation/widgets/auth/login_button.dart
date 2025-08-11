@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/auth/auth_bloc.dart';
+import '../../pages/ticket_queue_page.dart';
 
 class LoginButton extends StatelessWidget {
   final VoidCallback onPressed;
 
-  const LoginButton({
-    super.key,
-    required this.onPressed,
-  });
+  const LoginButton({super.key, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
+        // ВОЗВРАЩАЕМ ЛОГИКУ НАВИГАЦИИ ПРИ УСПЕХЕ
         if (state is AuthSuccess) {
-          Navigator.pushReplacementNamed(context, '/main');
+          // После успешного входа заменяем текущий экран (LoginPage)
+          // на главный экран (TicketQueuePage).
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const TicketQueuePage()),
+          );
         }
         if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -33,7 +37,7 @@ class LoginButton extends StatelessWidget {
           child: ElevatedButton(
             onPressed: state is AuthLoading ? null : onPressed,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
+              backgroundColor: const Color(0xFF415BE7),
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),

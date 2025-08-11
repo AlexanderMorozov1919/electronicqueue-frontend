@@ -136,6 +136,7 @@ class _PatientSearchFieldState extends State<PatientSearchField> {
           offset: Offset(0.0, size.height + 5.0),
           child: Material(
             elevation: 4.0,
+            color: Colors.white,
             child: _buildSuggestionsContainer(),
           ),
         ),

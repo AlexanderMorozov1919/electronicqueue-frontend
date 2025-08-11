@@ -60,4 +60,21 @@ class TicketApi {
       throw Exception('Failed to confirm action');
     }
   }
+
+  Future<Map<String, dynamic>> checkInByPhone(String phone) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/tickets/appointment/phone'),
+      headers: {'Content-Type': 'application/json; charset=UTF-8'},
+      body: json.encode({'phone': phone}),
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(utf8.decode(response.bodyBytes));
+    } else if (response.statusCode == 404) {
+      final errorBody = json.decode(utf8.decode(response.bodyBytes));
+      throw Exception(errorBody['error'] ?? 'Запись не найдена');
+    } else {
+      throw Exception('Ошибка сервера при проверке записи');
+    }
+  }
 }

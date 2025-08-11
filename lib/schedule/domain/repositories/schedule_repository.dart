@@ -1,5 +1,5 @@
-import '../entities/booking.dart';
+import 'package:elqueue/schedule/domain/entities/today_schedule_entity.dart';
 
 abstract class ScheduleRepository {
-  Future<List<Booking>> getSchedule(String date, int orgId);
+  Stream<TodayScheduleEntity> getTodaySchedule();
 }

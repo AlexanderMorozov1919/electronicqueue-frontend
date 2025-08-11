@@ -6,17 +6,25 @@ abstract class TicketState extends Equatable {
   final TicketEntity? currentTicket;
   final Map<TicketCategory, List<TicketEntity>> ticketsByCategory;
   final TicketCategory? selectedCategory;
-  final String? infoMessage; 
+  final String? infoMessage;
+  final TicketEntity? selectedTicket;
 
   const TicketState({
     this.currentTicket,
     this.ticketsByCategory = const {},
     this.selectedCategory,
-    this.infoMessage, 
+    this.infoMessage,
+    this.selectedTicket,
   });
 
   @override
-  List<Object?> get props => [currentTicket, ticketsByCategory, selectedCategory, infoMessage]; 
+  List<Object?> get props => [
+        currentTicket,
+        ticketsByCategory,
+        selectedCategory,
+        infoMessage,
+        selectedTicket
+      ];
 }
 
 class TicketInitial extends TicketState {}
@@ -26,7 +34,8 @@ class TicketLoading extends TicketState {
     super.currentTicket,
     super.ticketsByCategory,
     super.selectedCategory,
-    super.infoMessage, 
+    super.infoMessage,
+    super.selectedTicket,
   });
 }
 
@@ -36,6 +45,7 @@ class TicketLoaded extends TicketState {
     super.ticketsByCategory = const {},
     super.selectedCategory,
     super.infoMessage,
+    super.selectedTicket,
   });
 
   TicketLoaded copyWith({
@@ -43,12 +53,16 @@ class TicketLoaded extends TicketState {
     Map<TicketCategory, List<TicketEntity>>? ticketsByCategory,
     TicketCategory? selectedCategory,
     String? infoMessage,
+    TicketEntity? selectedTicket,
+    bool clearSelectedTicket = false,
   }) {
     return TicketLoaded(
       currentTicket: currentTicket ?? this.currentTicket,
       ticketsByCategory: ticketsByCategory ?? this.ticketsByCategory,
       selectedCategory: selectedCategory ?? this.selectedCategory,
       infoMessage: infoMessage,
+      selectedTicket:
+          clearSelectedTicket ? null : selectedTicket ?? this.selectedTicket,
     );
   }
 }
@@ -60,9 +74,17 @@ class TicketError extends TicketState {
     super.currentTicket,
     super.ticketsByCategory = const {},
     super.selectedCategory,
-    super.infoMessage, 
+    super.infoMessage,
+    super.selectedTicket,
   });
 
   @override
-  List<Object?> get props => [message, currentTicket, ticketsByCategory, selectedCategory, infoMessage]; 
+  List<Object?> get props => [
+        message,
+        currentTicket,
+        ticketsByCategory,
+        selectedCategory,
+        infoMessage,
+        selectedTicket
+      ];
 }
