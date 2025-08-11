@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:elqueue/queue_reception/presentation/blocs/ad_display_bloc.dart';
+import 'package:elqueue/queue_reception/presentation/widgets/ad_content_player.dart';
 import 'package:elqueue/schedule/data/models/today_schedule_model.dart';
 import 'package:elqueue/schedule/domain/entities/today_schedule_entity.dart';
 import 'package:flutter/material.dart';
@@ -61,11 +62,12 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
 
     final scheduleState = context.read<ScheduleBloc>().state;
     if (scheduleState is! ScheduleLoaded) return;
-    
+
     final schedule = scheduleState.schedule;
     final totalDoctors = schedule.doctors.length;
 
-    if (totalDoctors == 0 || _doctorsPerPage <= 0 || _timeSlotsPerPage <= 0) return;
+    if (totalDoctors == 0 || _doctorsPerPage <= 0 || _timeSlotsPerPage <= 0)
+      return;
 
     final totalHorizontalPages = (totalDoctors / _doctorsPerPage).ceil();
 
@@ -74,12 +76,15 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
     final doctorsOnCurrentPage = (totalDoctors > 0 && startIndex < endIndex)
         ? schedule.doctors.sublist(startIndex, endIndex)
         : <DoctorScheduleEntity>[];
-    
-    final pageTimes = _calculateMinMaxForDoctors(doctorsOnCurrentPage, schedule.date);
-    final timePoints = _generateTimePoints(pageTimes.minTime, pageTimes.maxTime);
+
+    final pageTimes =
+        _calculateMinMaxForDoctors(doctorsOnCurrentPage, schedule.date);
+    final timePoints =
+        _generateTimePoints(pageTimes.minTime, pageTimes.maxTime);
     final totalTimePoints = timePoints.isNotEmpty ? timePoints.length - 1 : 0;
-    final totalVerticalPagesForCurrentPage = max(1, (totalTimePoints / _timeSlotsPerPage).ceil());
-    
+    final totalVerticalPagesForCurrentPage =
+        max(1, (totalTimePoints / _timeSlotsPerPage).ceil());
+
     if (totalHorizontalPages <= 1 && totalVerticalPagesForCurrentPage <= 1) {
       _timer?.cancel();
       _timer = null;
@@ -145,7 +150,7 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
 
     return _MinMaxTimes(minTime: minTime, maxTime: maxTime);
   }
-  
+
   List<TimePoint> _generateTimePoints(DateTime minTime, DateTime maxTime) {
     final List<TimePoint> points = [];
     DateTime currentTime = minTime;
@@ -158,10 +163,10 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
       currentTime = currentTime.add(const Duration(minutes: 30));
     }
     // Добавляем последнюю точку, чтобы замкнуть интервал
-    if(points.isEmpty || points.last.time.isBefore(maxTime)) {
-       points.add(TimePoint(time: maxTime, isAxis: maxTime.minute == 0));
+    if (points.isEmpty || points.last.time.isBefore(maxTime)) {
+      points.add(TimePoint(time: maxTime, isAxis: maxTime.minute == 0));
     }
-    
+
     return points;
   }
 
@@ -169,10 +174,10 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
     if (state.ads.isEmpty) {
       return const SizedBox.shrink();
     }
-  
+
     final currentAd = state.ads[state.currentIndex];
     final borderRadius = BorderRadius.circular(12.0);
-  
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Container(
@@ -194,14 +199,9 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
             transitionBuilder: (Widget child, Animation<double> animation) {
               return FadeTransition(opacity: animation, child: child);
             },
-            child: Image(
-              image: currentAd.picture,
+            child: AdContentPlayer(
               key: ValueKey<int>(currentAd.id),
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (context, error, stackTrace) =>
-                  const Center(child: Icon(Icons.error_outline, size: 50)),
+              ad: currentAd,
             ),
           ),
         ),
@@ -243,17 +243,20 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
                     child: BlocConsumer<ScheduleBloc, ScheduleState>(
                       listener: (context, state) {
                         if (state is ScheduleLoaded && _timer == null) {
-                           _startPageCycling();
+                          _startPageCycling();
                         }
                       },
                       builder: (context, state) {
-                        if (state is ScheduleInitial || state is ScheduleLoading) {
-                          return const Center(child: CircularProgressIndicator());
+                        if (state is ScheduleInitial ||
+                            state is ScheduleLoading) {
+                          return const Center(
+                              child: CircularProgressIndicator());
                         } else if (state is ScheduleLoaded) {
                           final schedule = state.schedule;
                           if (schedule.doctors.isEmpty) {
                             return const Center(
-                                child: Text('На сегодня расписание отсутствует.'));
+                                child:
+                                    Text('На сегодня расписание отсутствует.'));
                           }
                           return _buildScheduleView(context, state, appTheme);
                         } else if (state is ScheduleError) {
@@ -267,7 +270,6 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
                       },
                     ),
                   ),
-
                   if (showAds)
                     AspectRatio(
                       aspectRatio: 3 / 4,
@@ -282,7 +284,8 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
     );
   }
 
-  Widget _buildScheduleView(BuildContext context, ScheduleLoaded state, AppTheme appTheme) {
+  Widget _buildScheduleView(
+      BuildContext context, ScheduleLoaded state, AppTheme appTheme) {
     return Column(
       children: [
         Expanded(
@@ -308,9 +311,8 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
     );
   }
 
-
-  Widget _buildScheduleContent(BuildContext context, TodayScheduleEntity schedule,
-      AppTheme appTheme) {
+  Widget _buildScheduleContent(BuildContext context,
+      TodayScheduleEntity schedule, AppTheme appTheme) {
     const double timeColumnWidth = 70.0;
     const double minDoctorColumnWidth = 280.0;
     const double sectionHeight = 60.0;
@@ -319,13 +321,17 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
       builder: (context, constraints) {
         // --- 1. РАСЧЕТ ПАРАМЕТРОВ ПАГИНАЦИИ ---
         final availableWidth = constraints.maxWidth - timeColumnWidth;
-        final newDoctorsPerPage = max(1, (availableWidth / minDoctorColumnWidth).floor());
-        
-        // Высота одного слота + отступ
-        final availableHeight = constraints.maxHeight - 135; // Вычитаем высоту шапки врача
-        final newTimeSlotsPerPage = max(1, (availableHeight / sectionHeight).floor());
+        final newDoctorsPerPage =
+            max(1, (availableWidth / minDoctorColumnWidth).floor());
 
-        if (_doctorsPerPage != newDoctorsPerPage || _timeSlotsPerPage != newTimeSlotsPerPage) {
+        // Высота одного слота + отступ
+        final availableHeight =
+            constraints.maxHeight - 135; // Вычитаем высоту шапки врача
+        final newTimeSlotsPerPage =
+            max(1, (availableHeight / sectionHeight).floor());
+
+        if (_doctorsPerPage != newDoctorsPerPage ||
+            _timeSlotsPerPage != newTimeSlotsPerPage) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               setState(() {
@@ -338,7 +344,7 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
             }
           });
         }
-        
+
         // --- 2. ПОЛУЧЕНИЕ ВРАЧЕЙ ДЛЯ ТЕКУЩЕЙ ГОРИЗОНТАЛЬНОЙ СТРАНИЦЫ ---
         final totalDoctors = schedule.doctors.length;
         final totalHorizontalPages = (totalDoctors / _doctorsPerPage).ceil();
@@ -350,7 +356,7 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
 
         final startIndex = _currentPage * _doctorsPerPage;
         final endIndex = min(startIndex + _doctorsPerPage, totalDoctors);
-        
+
         final doctorsToShow = (totalDoctors > 0 && startIndex < endIndex)
             ? schedule.doctors.sublist(startIndex, endIndex)
             : <DoctorScheduleEntity>[];
@@ -361,25 +367,32 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
         } else {
           actualDoctorColumnWidth = minDoctorColumnWidth;
         }
-        
+
         // --- 3. ПОЛУЧЕНИЕ И НАРЕЗКА ВРЕМЕННЫХ ТОЧЕК ---
-        final pageTimes = _calculateMinMaxForDoctors(doctorsToShow, schedule.date);
-        final fullTimePoints = _generateTimePoints(pageTimes.minTime, pageTimes.maxTime);
-        
-        final totalTimePoints = fullTimePoints.isNotEmpty ? fullTimePoints.length - 1 : 0;
-        final totalVerticalPages = max(1, (totalTimePoints / _timeSlotsPerPage).ceil());
-        
-        if (_verticalCurrentPage >= totalVerticalPages && totalVerticalPages > 0) {
-           _verticalCurrentPage = 0;
+        final pageTimes =
+            _calculateMinMaxForDoctors(doctorsToShow, schedule.date);
+        final fullTimePoints =
+            _generateTimePoints(pageTimes.minTime, pageTimes.maxTime);
+
+        final totalTimePoints =
+            fullTimePoints.isNotEmpty ? fullTimePoints.length - 1 : 0;
+        final totalVerticalPages =
+            max(1, (totalTimePoints / _timeSlotsPerPage).ceil());
+
+        if (_verticalCurrentPage >= totalVerticalPages &&
+            totalVerticalPages > 0) {
+          _verticalCurrentPage = 0;
         }
 
         final verticalStartIndex = _verticalCurrentPage * _timeSlotsPerPage;
-        final verticalEndIndex = min(verticalStartIndex + _timeSlotsPerPage + 1, fullTimePoints.length);
+        final verticalEndIndex = min(
+            verticalStartIndex + _timeSlotsPerPage + 1, fullTimePoints.length);
 
-        final visibleTimePoints = (fullTimePoints.isNotEmpty && verticalStartIndex < verticalEndIndex)
-            ? fullTimePoints.sublist(verticalStartIndex, verticalEndIndex)
-            : <TimePoint>[];
-        
+        final visibleTimePoints =
+            (fullTimePoints.isNotEmpty && verticalStartIndex < verticalEndIndex)
+                ? fullTimePoints.sublist(verticalStartIndex, verticalEndIndex)
+                : <TimePoint>[];
+
         // --- 4. ПОСТРОЕНИЕ ВИДЖЕТОВ ---
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -393,7 +406,8 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
                   timePoints: visibleTimePoints),
               for (final doctor in doctorsToShow.cast<DoctorScheduleModel>())
                 ScheduleColumn(
-                  key: ValueKey('col-${doctor.id}-${_currentPage}-${_verticalCurrentPage}'),
+                  key: ValueKey(
+                      'col-${doctor.id}-${_currentPage}-${_verticalCurrentPage}'),
                   appTheme: appTheme,
                   doctorSchedule: doctor,
                   date: schedule.date,

@@ -14,4 +14,4 @@ class FetchEnabledAds extends AdDisplayEvent {
   List<Object> get props => [screen];
 }
 
-class _ShowNextAd extends AdDisplayEvent {}
+class ShowNextAd extends AdDisplayEvent {}

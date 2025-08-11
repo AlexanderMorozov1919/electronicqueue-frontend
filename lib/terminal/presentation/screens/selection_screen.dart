@@ -26,6 +26,7 @@ class _SelectionScreenState extends State<SelectionScreen> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -38,7 +39,7 @@ class _SelectionScreenState extends State<SelectionScreen> {
           ),
         ),
         centerTitle: true,
-        toolbarHeight: 90,
+        toolbarHeight: screenHeight * 0.15,
         backgroundColor: Colors.white,
       ),
       body: Center(
