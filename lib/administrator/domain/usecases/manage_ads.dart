@@ -9,6 +9,12 @@ class GetAds {
   Future<Either<Failure, List<AdEntity>>> call() => repository.getAds();
 }
 
+class GetAdById {
+  final AdRepository repository;
+  GetAdById(this.repository);
+  Future<Either<Failure, AdEntity>> call(int id) => repository.getAdById(id);
+}
+
 class CreateAd {
   final AdRepository repository;
   CreateAd(this.repository);
