@@ -53,3 +53,6 @@ class CallSpecificTicketEvent extends TicketEvent {
 }
 
 class ClearInfoMessageEvent extends TicketEvent {}
+
+// <-- НОВОЕ СОБЫТИЕ -->
+class CheckAppointmentButtonStatus extends TicketEvent {}

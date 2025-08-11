@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/ticket/ticket_bloc.dart';
 import '../../core/constants/app_constans.dart';
+import '../../domain/repositories/settings_repository.dart'; // <-- НОВЫЙ ИМПОРТ
 import '../../domain/usecases/call_next_ticket.dart';
+import '../../domain/usecases/get_process_status.dart'; // <-- НОВЫЙ ИМПОРТ
 import '../../domain/usecases/register_current_ticket.dart';
 import '../../domain/usecases/complete_current_ticket.dart';
 import '../../domain/usecases/get_current_ticket.dart';
@@ -55,7 +57,14 @@ class TicketQueuePage extends StatelessWidget {
           getTicketsByCategory: GetTicketsByCategory(
             RepositoryProvider.of<TicketRepository>(context),
           ),
-        )..add(LoadCurrentTicketEvent()),
+          // <-- ИНЪЕКЦИЯ ЗАВИСИМОСТИ -->
+          getProcessStatus: GetProcessStatus(
+            RepositoryProvider.of<SettingsRepository>(context),
+          ),
+        )
+        // <-- ВЫЗОВ НОВЫХ СОБЫТИЙ ПРИ ИНИЦИАЛИЗАЦИИ -->
+        ..add(LoadCurrentTicketEvent())
+        ..add(CheckAppointmentButtonStatus()),
         child: Scaffold(
           backgroundColor: const Color(0xFFF1F3F4),
           appBar: AppBar(

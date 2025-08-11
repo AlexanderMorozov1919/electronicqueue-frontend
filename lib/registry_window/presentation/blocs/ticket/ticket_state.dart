@@ -8,6 +8,7 @@ abstract class TicketState extends Equatable {
   final TicketCategory? selectedCategory;
   final String? infoMessage;
   final TicketEntity? selectedTicket;
+  final bool isAppointmentButtonEnabled; // <-- НОВОЕ ПОЛЕ
 
   const TicketState({
     this.currentTicket,
@@ -15,6 +16,7 @@ abstract class TicketState extends Equatable {
     this.selectedCategory,
     this.infoMessage,
     this.selectedTicket,
+    this.isAppointmentButtonEnabled = true, // <-- ЗНАЧЕНИЕ ПО УМОЛЧАНИЮ
   });
 
   @override
@@ -23,7 +25,8 @@ abstract class TicketState extends Equatable {
         ticketsByCategory,
         selectedCategory,
         infoMessage,
-        selectedTicket
+        selectedTicket,
+        isAppointmentButtonEnabled, // <-- ДОБАВИТЬ В PROPS
       ];
 }
 
@@ -36,6 +39,7 @@ class TicketLoading extends TicketState {
     super.selectedCategory,
     super.infoMessage,
     super.selectedTicket,
+    super.isAppointmentButtonEnabled,
   });
 }
 
@@ -46,6 +50,7 @@ class TicketLoaded extends TicketState {
     super.selectedCategory,
     super.infoMessage,
     super.selectedTicket,
+    super.isAppointmentButtonEnabled = true,
   });
 
   TicketLoaded copyWith({
@@ -54,6 +59,7 @@ class TicketLoaded extends TicketState {
     TicketCategory? selectedCategory,
     String? infoMessage,
     TicketEntity? selectedTicket,
+    bool? isAppointmentButtonEnabled, // <-- ДОБАВИТЬ В COPYWITH
     bool clearSelectedTicket = false,
   }) {
     return TicketLoaded(
@@ -63,6 +69,7 @@ class TicketLoaded extends TicketState {
       infoMessage: infoMessage,
       selectedTicket:
           clearSelectedTicket ? null : selectedTicket ?? this.selectedTicket,
+      isAppointmentButtonEnabled: isAppointmentButtonEnabled ?? this.isAppointmentButtonEnabled, // <-- ДОБАВИТЬ В COPYWITH
     );
   }
 }
@@ -76,6 +83,7 @@ class TicketError extends TicketState {
     super.selectedCategory,
     super.infoMessage,
     super.selectedTicket,
+    super.isAppointmentButtonEnabled = true,
   });
 
   @override
@@ -85,6 +93,7 @@ class TicketError extends TicketState {
         ticketsByCategory,
         selectedCategory,
         infoMessage,
-        selectedTicket
+        selectedTicket,
+        isAppointmentButtonEnabled,
       ];
 }

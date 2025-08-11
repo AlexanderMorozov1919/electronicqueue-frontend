@@ -5,6 +5,7 @@ import '../../../domain/usecases/call_next_ticket.dart';
 import '../../../domain/usecases/call_specific_ticket.dart';
 import '../../../domain/usecases/complete_current_ticket.dart';
 import '../../../domain/usecases/get_current_ticket.dart';
+import '../../../domain/usecases/get_process_status.dart';
 import '../../../domain/usecases/get_tickets_by_category.dart';
 import '../../../domain/usecases/register_current_ticket.dart';
 import '../../../domain/entities/ticket_entity.dart';
@@ -18,6 +19,7 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
   final CompleteCurrentTicket completeCurrentTicket;
   final GetCurrentTicket getCurrentTicket;
   final GetTicketsByCategory getTicketsByCategory;
+  final GetProcessStatus getProcessStatus;
 
   TicketBloc({
     required this.callNextTicket,
@@ -26,6 +28,7 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
     required this.completeCurrentTicket,
     required this.getCurrentTicket,
     required this.getTicketsByCategory,
+    required this.getProcessStatus,
   }) : super(TicketInitial()) {
     on<CallNextTicketEvent>(_onCallNextTicket);
     on<CallSpecificTicketEvent>(_onCallSpecificTicket);
@@ -35,6 +38,46 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
     on<LoadCurrentTicketEvent>(_onLoadCurrentTicket);
     on<LoadTicketsByCategoryEvent>(_onLoadTicketsByCategory);
     on<ClearInfoMessageEvent>(_onClearInfoMessage);
+    on<CheckAppointmentButtonStatus>(_onCheckAppointmentButtonStatus);
+  }
+
+  Future<void> _onCheckAppointmentButtonStatus(
+    CheckAppointmentButtonStatus event,
+    Emitter<TicketState> emit,
+  ) async {
+    final result = await getProcessStatus('appointment');
+    final currentState = state; // Захватываем текущее состояние
+
+    result.fold(
+      (failure) {
+        // В случае ошибки, по умолчанию кнопка включена, сохраняем остальное состояние
+        if (currentState is TicketLoaded) {
+          emit(currentState.copyWith(isAppointmentButtonEnabled: true));
+        } else {
+          emit(TicketLoaded(
+            currentTicket: currentState.currentTicket,
+            ticketsByCategory: currentState.ticketsByCategory,
+            selectedCategory: currentState.selectedCategory,
+            selectedTicket: currentState.selectedTicket,
+            isAppointmentButtonEnabled: true,
+          ));
+        }
+      },
+      (isEnabled) {
+        // При успехе, обновляем состояние кнопки, сохраняя все остальное
+        if (currentState is TicketLoaded) {
+          emit(currentState.copyWith(isAppointmentButtonEnabled: isEnabled));
+        } else {
+          emit(TicketLoaded(
+            currentTicket: currentState.currentTicket,
+            ticketsByCategory: currentState.ticketsByCategory,
+            selectedCategory: currentState.selectedCategory,
+            selectedTicket: currentState.selectedTicket,
+            isAppointmentButtonEnabled: isEnabled,
+          ));
+        }
+      },
+    );
   }
 
   Future<void> _onCallNextTicket(
@@ -45,6 +88,7 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
       currentTicket: state.currentTicket,
       ticketsByCategory: state.ticketsByCategory,
       selectedCategory: state.selectedCategory,
+      isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
     ));
 
     String? categoryPrefix;
@@ -80,6 +124,7 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
             ticketsByCategory: state.ticketsByCategory,
             selectedCategory: state.selectedCategory,
             infoMessage: 'Очередь пуста',
+            isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
           ));
         } else {
           emit(TicketError(
@@ -87,15 +132,16 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
             currentTicket: state.currentTicket,
             ticketsByCategory: state.ticketsByCategory,
             selectedCategory: state.selectedCategory,
+            isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
           ));
         }
       },
       (ticket) {
-        emit(TicketLoaded(currentTicket: ticket));
-        // Перезагружаем список, чтобы убрать из него вызванный талон
+        emit(TicketLoaded(currentTicket: ticket, isAppointmentButtonEnabled: state.isAppointmentButtonEnabled));
         if (state.selectedCategory != null) {
           add(LoadTicketsByCategoryEvent(state.selectedCategory!));
         }
+        add(CheckAppointmentButtonStatus());
       },
     );
   }
@@ -109,10 +155,8 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
       final currentlySelected = loadedState.selectedTicket;
 
       if (currentlySelected?.id == event.ticket.id) {
-        // Снять выделение при повторном клике
         emit(loadedState.copyWith(clearSelectedTicket: true));
       } else {
-        // Выделить новый талон
         emit(loadedState.copyWith(selectedTicket: event.ticket));
       }
     }
@@ -130,6 +174,7 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
       ticketsByCategory: state.ticketsByCategory,
       selectedCategory: state.selectedCategory,
       selectedTicket: state.selectedTicket,
+      isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
     ));
 
     final result =
@@ -141,20 +186,21 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
         currentTicket: state.currentTicket,
         ticketsByCategory: state.ticketsByCategory,
         selectedCategory: state.selectedCategory,
-        selectedTicket: state.selectedTicket, // Сохраняем выделение при ошибке
+        selectedTicket: state.selectedTicket,
+        isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
       )),
       (calledTicket) {
-        // Успех!
         emit(TicketLoaded(
-          currentTicket: calledTicket, // Новый текущий талон
-          selectedTicket: null, // Снимаем выделение
+          currentTicket: calledTicket,
+          selectedTicket: null,
           ticketsByCategory: state.ticketsByCategory,
           selectedCategory: state.selectedCategory,
+          isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
         ));
-        // Перезагружаем список, чтобы убрать из него вызванный талон
         if (state.selectedCategory != null) {
           add(LoadTicketsByCategoryEvent(state.selectedCategory!));
         }
+        add(CheckAppointmentButtonStatus());
       },
     );
   }
@@ -174,13 +220,13 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
   ) async {
     final TicketEntity? ticketToUpdate = state.currentTicket;
     if (ticketToUpdate != null) {
-      emit(TicketLoading(currentTicket: ticketToUpdate));
+      emit(TicketLoading(currentTicket: ticketToUpdate, isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,));
 
       final result = await registerCurrentTicket(ticketToUpdate.id);
 
       result.fold(
         (failure) => emit(
-            TicketError(message: failure.message, currentTicket: ticketToUpdate)),
+            TicketError(message: failure.message, currentTicket: ticketToUpdate, isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,)),
         (_) {
           final updatedTicket = ticketToUpdate.copyWith(isRegistered: true);
           final newMap =
@@ -199,6 +245,7 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
             currentTicket: updatedTicket,
             ticketsByCategory: newMap,
             selectedCategory: state.selectedCategory,
+            isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
           ));
         },
       );
@@ -211,13 +258,13 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
   ) async {
     final TicketEntity? ticketToUpdate = state.currentTicket;
     if (ticketToUpdate != null) {
-      emit(TicketLoading(currentTicket: ticketToUpdate));
+      emit(TicketLoading(currentTicket: ticketToUpdate, isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,));
 
       final result = await completeCurrentTicket(ticketToUpdate.id);
 
       result.fold(
         (failure) => emit(
-            TicketError(message: failure.message, currentTicket: ticketToUpdate)),
+            TicketError(message: failure.message, currentTicket: ticketToUpdate, isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,)),
         (_) {
           final updatedTicket = ticketToUpdate.copyWith(isCompleted: true);
           final newMap =
@@ -236,6 +283,7 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
             currentTicket: updatedTicket,
             ticketsByCategory: newMap,
             selectedCategory: state.selectedCategory,
+            isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
           ));
         },
       );
@@ -246,8 +294,8 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
     LoadCurrentTicketEvent event,
     Emitter<TicketState> emit,
   ) async {
-    emit(TicketLoading());
-    emit(const TicketLoaded(currentTicket: null));
+    emit(TicketLoading(isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,));
+    emit(TicketLoaded(currentTicket: null, isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,));
   }
 
   Future<void> _onLoadTicketsByCategory(
@@ -259,6 +307,7 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
       ticketsByCategory: state.ticketsByCategory,
       selectedCategory: event.category,
       selectedTicket: state.selectedTicket,
+      isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
     ));
 
     final result = await getTicketsByCategory(event.category);
@@ -269,6 +318,7 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
           currentTicket: state.currentTicket,
           ticketsByCategory: state.ticketsByCategory,
           selectedCategory: state.selectedCategory,
+          isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
         ));
       },
       (tickets) {
@@ -281,6 +331,7 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
           ticketsByCategory: newMap,
           selectedCategory: event.category,
           selectedTicket: state.selectedTicket,
+          isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
         ));
       },
     );
