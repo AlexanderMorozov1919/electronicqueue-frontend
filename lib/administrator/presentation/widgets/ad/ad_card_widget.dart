@@ -29,10 +29,15 @@ class _AdCardWidgetState extends State<AdCardWidget> {
   @override
   void initState() {
     super.initState();
+    print('[AdCardWidget] initState for ad ID: ${widget.ad.id}, mediaType: ${widget.ad.mediaType}');
     _fullAd = widget.ad;
     // Если тип медиа определен, но самих данных нет - дозагружаем
-    if ((widget.ad.mediaType == 'image' && (widget.ad.picture == null || widget.ad.picture!.isEmpty)) ||
-        (widget.ad.mediaType == 'video' && (widget.ad.video == null || widget.ad.video!.isEmpty))) {
+    bool needsFetch = (widget.ad.mediaType == 'image' && (widget.ad.picture == null || widget.ad.picture!.isEmpty)) ||
+        (widget.ad.mediaType == 'video' && (widget.ad.video == null || widget.ad.video!.isEmpty));
+    
+    print('[AdCardWidget] Needs to fetch media for ad ID ${widget.ad.id}: $needsFetch');
+
+    if (needsFetch) {
       _fetchAdMedia();
     } else if (widget.ad.mediaType == 'video' && widget.ad.video != null) {
       _initializeVideoPlayer(_safeBase64Decode(widget.ad.video!));
@@ -43,26 +48,37 @@ class _AdCardWidgetState extends State<AdCardWidget> {
   Uint8List _safeBase64Decode(String source) {
     try {
       return base64Decode(source);
-    } catch (e) {
-      print("Error decoding base64 string: $e");
+    } catch (e, s) {
+      print("[AdCardWidget] Error decoding base64 string for ad ID ${widget.ad.id}: $e\n$s");
       return Uint8List(0); // Возвращаем пустой список байт в случае ошибки
     }
   }
 
   Future<void> _initializeVideoPlayer(Uint8List videoBytes) async {
+    print('[AdCardWidget] _initializeVideoPlayer started for ad ID: ${widget.ad.id}');
     if (kIsWeb && videoBytes.isNotEmpty) {
-      _disposeVideoPlayer(); // Очищаем предыдущий контроллер
-      final blob = html.Blob([videoBytes], 'video/mp4');
-      _videoObjectUrl = html.Url.createObjectUrlFromBlob(blob);
-      _videoController = VideoPlayerController.networkUrl(Uri.parse(_videoObjectUrl!))
-        ..initialize().then((_) {
-          if (mounted) {
-            setState(() {});
-            _videoController?.setLooping(true);
-            _videoController?.setVolume(0);
-            _videoController?.play();
-          }
-        });
+      try {
+        _disposeVideoPlayer(); // Очищаем предыдущий контроллер
+        final blob = html.Blob([videoBytes], 'video/mp4');
+        _videoObjectUrl = html.Url.createObjectUrlFromBlob(blob);
+        print('[AdCardWidget] Created video object URL for ad ID ${widget.ad.id}: $_videoObjectUrl');
+        _videoController = VideoPlayerController.networkUrl(Uri.parse(_videoObjectUrl!));
+        await _videoController!.initialize();
+        print('[AdCardWidget] Video player initialized for ad ID ${widget.ad.id}');
+        if (mounted) {
+          setState(() {});
+          _videoController?.setLooping(true);
+          _videoController?.setVolume(0);
+          _videoController?.play();
+          print('[AdCardWidget] Video playing for ad ID ${widget.ad.id}');
+        } else {
+          print('[AdCardWidget] Widget not mounted after video initialization for ad ID ${widget.ad.id}');
+        }
+      } catch (e, s) {
+        print('[AdCardWidget] ERROR in _initializeVideoPlayer for ad ID ${widget.ad.id}: $e\n$s');
+      }
+    } else {
+      print('[AdCardWidget] _initializeVideoPlayer skipped for ad ID ${widget.ad.id}. isWeb: $kIsWeb, videoBytes empty: ${videoBytes.isEmpty}');
     }
   }
 
@@ -76,23 +92,30 @@ class _AdCardWidgetState extends State<AdCardWidget> {
   }
 
   Future<void> _fetchAdMedia() async {
-    if (widget.ad.id == null) return;
+    if (widget.ad.id == null) {
+      print('[AdCardWidget] _fetchAdMedia skipped: ad.id is null.');
+      return;
+    }
+    print('[AdCardWidget] _fetchAdMedia started for ad ID: ${widget.ad.id}');
     setState(() => _isLoading = true);
     try {
       // Получаем репозиторий из контекста
       final adRepository = context.read<AdRepository>();
       final getAdById = GetAdById(adRepository);
+      print('[AdCardWidget] Calling getAdById(${widget.ad.id})');
       final dartz.Either<dynamic, AdEntity> result = await getAdById(widget.ad.id!);
 
       if (mounted) {
         result.fold(
           (failure) {
+            print('[AdCardWidget] _fetchAdMedia FAILED for ad ID: ${widget.ad.id}. Failure: ${failure.message}');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Ошибка загрузки медиа: ${failure.message}')),
             );
             setState(() => _isLoading = false);
           },
           (fetchedAd) {
+            print('[AdCardWidget] _fetchAdMedia SUCCESS for ad ID: ${widget.ad.id}. Fetched ad mediaType: ${fetchedAd.mediaType}, picture is null: ${fetchedAd.picture == null}, video is null: ${fetchedAd.video == null}');
             setState(() {
               _fullAd = fetchedAd;
               if (fetchedAd.mediaType == 'video' && fetchedAd.video != null) {
@@ -102,8 +125,11 @@ class _AdCardWidgetState extends State<AdCardWidget> {
             });
           },
         );
+      } else {
+        print('[AdCardWidget] Widget not mounted after fetching media for ad ID ${widget.ad.id}');
       }
-    } catch (e) {
+    } catch (e, s) {
+      print('[AdCardWidget] EXCEPTION in _fetchAdMedia for ad ID: ${widget.ad.id}: $e\n$s');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Не удалось загрузить медиа: $e')),
@@ -115,6 +141,7 @@ class _AdCardWidgetState extends State<AdCardWidget> {
 
   @override
   void dispose() {
+    print('[AdCardWidget] dispose for ad ID: ${widget.ad.id}');
     _disposeVideoPlayer();
     super.dispose();
   }
@@ -263,19 +290,27 @@ class _AdCardWidgetState extends State<AdCardWidget> {
   }
 
   Widget _buildMediaContent(AdEntity adData) {
+    print('[AdCardWidget] _buildMediaContent for ad ID: ${adData.id}. isLoading: $_isLoading, mediaType: ${adData.mediaType}, picture empty: ${adData.picture?.isEmpty}, video empty: ${adData.video?.isEmpty}');
     if (_isLoading) {
+      print('[AdCardWidget] _buildMediaContent: showing loading indicator.');
       return const Center(child: CircularProgressIndicator());
     }
     if (adData.mediaType == 'image' && adData.picture != null && adData.picture!.isNotEmpty) {
+      print('[AdCardWidget] _buildMediaContent: showing image.');
       final imageBytes = _safeBase64Decode(adData.picture!);
       if (imageBytes.isEmpty) {
+        print('[AdCardWidget] _buildMediaContent: showing broken image icon (decoded bytes are empty).');
         return const Icon(Icons.broken_image, color: Colors.red, size: 60);
       }
       return Image.memory(imageBytes,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, color: Colors.red, size: 60));
+          errorBuilder: (context, error, stackTrace) {
+            print('[AdCardWidget] _buildMediaContent: Image.memory error builder triggered for ad ID ${adData.id}: $error');
+            return const Icon(Icons.error, color: Colors.red, size: 60);
+          });
     }
     if (adData.mediaType == 'video' && _videoController != null && _videoController!.value.isInitialized) {
+      print('[AdCardWidget] _buildMediaContent: showing video player.');
       // ИСПРАВЛЕНИЕ: Оборачиваем плеер в IgnorePointer
       return IgnorePointer(
         child: SizedBox.expand(
@@ -287,6 +322,7 @@ class _AdCardWidgetState extends State<AdCardWidget> {
                     child: VideoPlayer(_videoController!)))),
       );
     }
+    print('[AdCardWidget] _buildMediaContent: showing placeholder icon.');
     return Center(child: Icon(adData.mediaType == 'video' ? Icons.videocam : Icons.image_not_supported, color: Colors.grey, size: 60));
   }
 }
