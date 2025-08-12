@@ -9,6 +9,8 @@ abstract class TicketEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+class LoadAvailableCategories extends TicketEvent {}
+
 class CallNextTicketEvent extends TicketEvent {
   final int windowNumber;
   final TicketCategory? category;
@@ -53,3 +55,5 @@ class CallSpecificTicketEvent extends TicketEvent {
 }
 
 class ClearInfoMessageEvent extends TicketEvent {}
+
+class CheckAppointmentButtonStatus extends TicketEvent {}

@@ -7,6 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+// --- ИЗМЕНЕНИЕ: ДОБАВЛЕНЫ ИМПОРТЫ ---
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:video_player_web/video_player_web.dart';
+// ------------------------------------
 
 import 'data/datasource/settings_remote_data_source.dart';
 import 'data/repositories/auth_repository_impl.dart';
@@ -22,7 +26,14 @@ import 'presentation/pages/auth_dispatcher.dart';
 void main() async {
   // Инициализация биндингов Flutter, обязательна перед асинхронными операциями
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  // --- ИЗМЕНЕНИЕ: ИСПРАВЛЕНА РЕГИСТРАЦИЯ ПЛАГИНА ---
+  // Явная регистрация веб-реализации плагина video_player
+  if (kIsWeb) {
+    VideoPlayerPlugin();
+  }
+  // ---------------------------------------------
+
   // Загрузка переменных окружения из файла .env
   await dotenv.load(fileName: ".env");
 

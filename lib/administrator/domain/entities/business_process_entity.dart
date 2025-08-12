@@ -18,6 +18,7 @@ class BusinessProcessEntity extends Equatable {
       case 'queue_doctor': return 'Табло у кабинета врача';
       case 'schedule': return 'Общее расписание';
       case 'database': return 'Внешний API базы данных';
+      case 'appointment': return 'Оформление записи (кнопка)';
       default: return name;
     }
   }
