@@ -25,7 +25,7 @@ class TicketApi {
       final List services = decoded['services'];
       return services
           .map((e) => ServiceEntity(
-                id: e['id'],
+                id: e['service_id'],
                 title: e['title'],
                 letter: e['letter'],
               ))
