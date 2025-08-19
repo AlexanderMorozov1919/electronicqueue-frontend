@@ -69,9 +69,9 @@ class TicketRepositoryImpl implements TicketRepository {
   }
 
   @override
-  Future<Either<Failure, TicketEntity?>> getCurrentTicket() async {
+  Future<Either<Failure, TicketEntity?>> getCurrentTicket(int windowNumber) async {
     try {
-      final ticket = await remoteDataSource.getCurrentTicket();
+      final ticket = await remoteDataSource.getCurrentTicket(windowNumber);
       return Right(ticket);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));

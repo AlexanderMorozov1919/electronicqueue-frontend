@@ -8,7 +8,7 @@ class GetCurrentTicket {
 
   GetCurrentTicket(this.repository);
 
-  Future<Either<Failure, TicketEntity?>> call() async {
-    return await repository.getCurrentTicket();
+  Future<Either<Failure, TicketEntity?>> call(int windowNumber) async {
+    return await repository.getCurrentTicket(windowNumber);
   }
 }
