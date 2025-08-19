@@ -367,14 +367,38 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
     Emitter<TicketState> emit,
   ) async {
     emit(TicketLoading(
+      currentTicket: state.currentTicket,
+      ticketsByCategory: state.ticketsByCategory,
+      selectedCategory: state.selectedCategory,
+      selectedTicket: state.selectedTicket,
       availableCategories: state.availableCategories,
       isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
     ));
-    emit(TicketLoaded(
-      currentTicket: null, 
-      availableCategories: state.availableCategories,
-      isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
-    ));
+
+    final result = await getCurrentTicket(event.windowNumber);
+
+    result.fold(
+      (failure) {
+        emit(TicketError(
+            message: failure.message,
+            currentTicket: null,
+            ticketsByCategory: state.ticketsByCategory,
+            selectedCategory: state.selectedCategory,
+            availableCategories: state.availableCategories,
+            isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
+            ));
+      },
+      (ticket) {
+        emit(TicketLoaded(
+          currentTicket: ticket,
+          ticketsByCategory: state.ticketsByCategory,
+          selectedCategory: state.selectedCategory,
+          selectedTicket: state.selectedTicket,
+          availableCategories: state.availableCategories,
+          isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
+        ));
+      },
+    );
   }
 
   Future<void> _onLoadTicketsByCategory(

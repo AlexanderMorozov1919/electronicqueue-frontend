@@ -24,6 +24,13 @@ class TicketModel extends TicketEntity {
       return TicketCategory.other;
     }
 
+    // Helper to parse timestamps from the server.
+    // It strips timezone information ('Z') to treat the time as local.
+    DateTime? parseAsLocal(String? dateString) {
+      if (dateString == null) return null;
+      return DateTime.parse(dateString.replaceAll('Z', ''));
+    }
+
     final ticketNumber = json['ticket_number'] as String;
     final status = json['status'] as String? ?? 'ожидает';
     final idValue = json['id'] ?? json['ticket_id'];
@@ -32,16 +39,10 @@ class TicketModel extends TicketEntity {
       id: idValue.toString(),
       number: ticketNumber,
       category: determineCategory(ticketNumber),
-      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
-      calledAt: json['called_at'] != null
-          ? DateTime.parse(json['called_at'] as String).toLocal()
-          : null,
-      completedAt: json['completed_at'] != null
-          ? DateTime.parse(json['completed_at'] as String).toLocal()
-          : null,
-      appointmentTime: json['appointment_time'] != null
-          ? DateTime.parse(json['appointment_time'] as String) // Убрано .toLocal()
-          : null,
+      createdAt: parseAsLocal(json['created_at'] as String)!,
+      calledAt: parseAsLocal(json['called_at'] as String?),
+      completedAt: parseAsLocal(json['completed_at'] as String?),
+      appointmentTime: parseAsLocal(json['appointment_time'] as String?),
       status: status,
       isRegistered: status == 'зарегистрирован',
       isCompleted: status == 'завершен',

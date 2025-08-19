@@ -28,11 +28,15 @@ class _TicketQueuePageState extends State<TicketQueuePage> {
   @override
   void initState() {
     super.initState();
+    final authBloc = context.read<AuthBloc>();
+    final windowNumber = authBloc.windowNumber;
     // Диспетчеризация событий в глобальный TicketBloc
-    context.read<TicketBloc>()
-      ..add(LoadCurrentTicketEvent())
-      ..add(CheckAppointmentButtonStatus())
-      ..add(LoadAvailableCategories());
+    if (windowNumber != null) {
+      context.read<TicketBloc>()
+        ..add(LoadCurrentTicketEvent(windowNumber: windowNumber))
+        ..add(CheckAppointmentButtonStatus())
+        ..add(LoadAvailableCategories());
+    }
   }
 
   @override

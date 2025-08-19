@@ -25,7 +25,14 @@ class RegisterCurrentTicketEvent extends TicketEvent {}
 
 class CompleteCurrentTicketEvent extends TicketEvent {}
 
-class LoadCurrentTicketEvent extends TicketEvent {}
+class LoadCurrentTicketEvent extends TicketEvent {
+  final int windowNumber;
+
+  const LoadCurrentTicketEvent({required this.windowNumber});
+
+  @override
+  List<Object?> get props => [windowNumber];
+}
 
 class LoadTicketsByCategoryEvent extends TicketEvent {
   final TicketCategory category;

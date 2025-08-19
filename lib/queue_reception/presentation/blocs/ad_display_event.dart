@@ -8,10 +8,12 @@ abstract class AdDisplayEvent extends Equatable {
 
 class FetchEnabledAds extends AdDisplayEvent {
   final String screen;
-  const FetchEnabledAds({required this.screen});
+  final bool isForced; // Флаг для принудительного обновления
+
+  const FetchEnabledAds({required this.screen, this.isForced = false});
 
   @override
-  List<Object> get props => [screen];
+  List<Object> get props => [screen, isForced];
 }
 
 class ShowNextAd extends AdDisplayEvent {}

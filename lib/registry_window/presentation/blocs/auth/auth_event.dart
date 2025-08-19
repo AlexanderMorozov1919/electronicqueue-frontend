@@ -24,5 +24,9 @@ class LogoutRequested extends AuthEvent {
 }
 
 class AuthSessionRestored extends AuthEvent {
-  const AuthSessionRestored();
+  final int windowNumber;
+  const AuthSessionRestored({required this.windowNumber});
+
+  @override
+  List<Object> get props => [windowNumber];
 }
