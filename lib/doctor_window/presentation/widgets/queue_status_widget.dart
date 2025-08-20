@@ -136,7 +136,7 @@ class QueueStatusWidget extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: canEndBreak ? const Color(0xFF4EB8A6) : Color(0xFFFFA100),
+                  backgroundColor: canEndBreak ? const Color(0xFF4EB8A6) : Color(0xFF4EB8A6),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
