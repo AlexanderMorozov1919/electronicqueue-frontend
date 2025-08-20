@@ -46,6 +46,10 @@ class _CurrentTicketSectionState extends State<CurrentTicketSection> {
   }
 
   String _formatDuration(Duration duration) {
+    // Handle negative duration case by showing 00:00
+    if (duration.isNegative) {
+      return '00:00';
+    }
     final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
@@ -56,34 +60,36 @@ class _CurrentTicketSectionState extends State<CurrentTicketSection> {
     return BlocListener<TicketBloc, TicketState>(
       listener: (context, state) {
         final ticket = state.currentTicket;
-        if (ticket != null && ticket.calledAt != null && !ticket.isCompleted && !ticket.isRegistered) {
+        // The timer should run as long as the ticket is not completed.
+        if (ticket != null && ticket.calledAt != null && !ticket.isCompleted) {
           _startTimer(ticket.calledAt!);
         } else {
           _stopTimer();
         }
       },
-      child: BlocSelector<TicketBloc, TicketState, (TicketEntity?, Type)>(
+      child: BlocSelector<TicketBloc, TicketState, (TicketEntity?, Type, bool)>(
         selector: (state) {
-          return (state.currentTicket, state.runtimeType);
+          return (state.currentTicket, state.runtimeType, state.isAppointmentButtonEnabled);
         },
         builder: (context, data) {
           final currentTicket = data.$1;
           final runtimeType = data.$2;
+          final isAppointmentButtonEnabled = data.$3;
           final bool isAnyLoading = runtimeType == TicketLoading;
-          return _buildTicketState(context, currentTicket, isAnyLoading);
+          return _buildTicketState(context, currentTicket, isAnyLoading, isAppointmentButtonEnabled);
         },
       ),
     );
   }
 
-  Widget _buildTicketState(BuildContext context, TicketEntity? currentTicket, bool isAnyLoading) {
-    final bool isTicketActive = currentTicket != null && !currentTicket.isCompleted && !currentTicket.isRegistered;
+  Widget _buildTicketState(BuildContext context, TicketEntity? currentTicket, bool isAnyLoading, bool isAppointmentButtonEnabled) {
+    final bool isTicketActiveForButtons = currentTicket != null && !currentTicket.isCompleted;
 
-    Duration finalDuration = _duration;
+    Duration finalDuration;
     if (currentTicket?.completedAt != null && currentTicket?.calledAt != null) {
       finalDuration = currentTicket!.completedAt!.difference(currentTicket.calledAt!);
-    } else if (currentTicket?.isRegistered == true && currentTicket?.calledAt != null) {
-      finalDuration = DateTime.now().difference(currentTicket!.calledAt!);
+    } else {
+      finalDuration = _duration;
     }
 
     return Card(
@@ -102,22 +108,22 @@ class _CurrentTicketSectionState extends State<CurrentTicketSection> {
                 ),
                 if (currentTicket?.calledAt != null)
                   Chip(
-                    avatar: Icon(Icons.timer_outlined, size: 20, color: isTicketActive ? Colors.black : Colors.grey),
+                    avatar: Icon(Icons.timer_outlined, size: 20, color: currentTicket?.isCompleted ?? false ? Colors.grey : Colors.black),
                     label: Text(
                       _formatDuration(finalDuration),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: isTicketActive ? Colors.black : Colors.grey,
+                        color: currentTicket?.isCompleted ?? false ? Colors.grey : Colors.black,
                       ),
                     ),
-                    backgroundColor: isTicketActive ? Colors.blue.shade100 : Colors.grey.shade300,
+                    backgroundColor: currentTicket?.isCompleted ?? false ? Colors.grey.shade300 : Colors.blue.shade100,
                   )
               ],
             ),
             const SizedBox(height: 10),
             if (currentTicket != null)
-              _buildActiveTicket(context, currentTicket, isTicketActive, isAnyLoading)
+              _buildActiveTicket(context, currentTicket, isTicketActiveForButtons, isAnyLoading, isAppointmentButtonEnabled)
             else
               const Text('Нет активного талона. Нажмите "Вызвать следующего".'),
           ],
@@ -126,7 +132,9 @@ class _CurrentTicketSectionState extends State<CurrentTicketSection> {
     );
   }
 
-  Widget _buildActiveTicket(BuildContext context, TicketEntity ticket, bool isActive, bool isAnyLoading) {
+  Widget _buildActiveTicket(BuildContext context, TicketEntity ticket, bool isActive, bool isAnyLoading, bool isAppointmentButtonEnabled) {
+    final canRegister = isActive && !ticket.isRegistered;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -138,19 +146,19 @@ class _CurrentTicketSectionState extends State<CurrentTicketSection> {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: isActive ? Colors.black : Colors.grey,
+                color: ticket.isCompleted ? Colors.grey : Colors.black,
               ),
             ),
             Text(
               'Категория: ${ticket.category.name}',
-              style: TextStyle(color: isActive ? Colors.black54 : Colors.grey),
+              style: TextStyle(color: ticket.isCompleted ? Colors.grey : Colors.black54),
             ),
             if (ticket.calledAt != null)
               Text(
                 'Вызван в: ${DateFormat('HH:mm:ss').format(ticket.calledAt!)}',
-                style: TextStyle(color: isActive ? Colors.black54 : Colors.grey, fontSize: 12),
+                style: TextStyle(color: ticket.isCompleted ? Colors.grey : Colors.black54, fontSize: 12),
               ),
-            if (ticket.completedAt != null) // ДОБАВЛЕНО
+            if (ticket.completedAt != null)
               Text(
                 'Завершён в: ${DateFormat('HH:mm:ss').format(ticket.completedAt!)}',
                 style: const TextStyle(color: Colors.grey, fontSize: 12),
@@ -159,8 +167,10 @@ class _CurrentTicketSectionState extends State<CurrentTicketSection> {
         ),
         Row(
           children: [
-            _buildRegisterButton(context, ticket, isActive, isAnyLoading),
-            const SizedBox(width: 10),
+            if (isAppointmentButtonEnabled) ...[
+              _buildRegisterButton(context, ticket, canRegister, isAnyLoading),
+              const SizedBox(width: 10),
+            ],
             _buildCompleteButton(context, ticket, isActive, isAnyLoading),
           ],
         ),
@@ -168,9 +178,9 @@ class _CurrentTicketSectionState extends State<CurrentTicketSection> {
     );
   }
 
-  Widget _buildRegisterButton(BuildContext context, TicketEntity ticket, bool isActive, bool isAnyLoading) {
+  Widget _buildRegisterButton(BuildContext context, TicketEntity ticket, bool canRegister, bool isAnyLoading) {
     return ElevatedButton(
-      onPressed: isActive && !isAnyLoading
+      onPressed: canRegister && !isAnyLoading
           ? () {
               showDialog<bool>(
                 context: context,
@@ -212,9 +222,9 @@ class _CurrentTicketSectionState extends State<CurrentTicketSection> {
     );
   }
 
-  Widget _buildCompleteButton(BuildContext context, TicketEntity ticket, bool isActive, bool isAnyLoading) {
+  Widget _buildCompleteButton(BuildContext context, TicketEntity ticket, bool canComplete, bool isAnyLoading) {
     return ElevatedButton(
-      onPressed: isActive && !isAnyLoading
+      onPressed: canComplete && !isAnyLoading
           ? () {
               context.read<TicketBloc>().add(CompleteCurrentTicketEvent());
             }

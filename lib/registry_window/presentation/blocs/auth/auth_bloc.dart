@@ -46,6 +46,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     await authRepository.logout();
+    _windowNumber = null; // Очищаем номер окна при выходе
     emit(AuthInitial());
   }
 
@@ -53,8 +54,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthSessionRestored event,
     Emitter<AuthState> emit,
   ) {
-    // Просто переводим BLoC в состояние успеха. Данные пользователя нам здесь не важны,
-    // так как окно регистратора их не отображает.
+    // Сохраняем номер окна, полученный из токена
+    _windowNumber = event.windowNumber;
+    // Переводим BLoC в состояние успеха
     emit(AuthSuccess());
   }
 }

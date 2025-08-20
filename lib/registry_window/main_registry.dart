@@ -1,9 +1,17 @@
 import 'package:elqueue/registry_window/data/datasources/appointment_remote_data_source.dart';
 import 'package:elqueue/registry_window/data/datasources/patient_remote_data_source.dart';
+import 'package:elqueue/registry_window/data/datasources/registrar_remote_data_source.dart';
+import 'package:elqueue/registry_window/data/datasources/settings_remote_data_source.dart';
+import 'package:elqueue/registry_window/data/repositories/registrar_repository_impl.dart';
 import 'package:elqueue/registry_window/domain/repositories/appointment_repository_impl.dart';
 import 'package:elqueue/registry_window/data/repositories/patient_repository_impl.dart';
+import 'package:elqueue/registry_window/data/repositories/settings_repository_impl.dart';
 import 'package:elqueue/registry_window/domain/repositories/appointment_repository.dart';
 import 'package:elqueue/registry_window/domain/repositories/patient_repository.dart';
+import 'package:elqueue/registry_window/domain/repositories/registrar_repository.dart';
+import 'package:elqueue/registry_window/domain/repositories/settings_repository.dart';
+import 'package:elqueue/registry_window/domain/usecases/get_all_services.dart';
+import 'package:elqueue/registry_window/domain/usecases/get_registrar_priorities.dart';
 import 'package:elqueue/registry_window/presentation/blocs/appointment/appointment_bloc.dart';
 import 'package:elqueue/registry_window/presentation/blocs/report/report_bloc.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +30,7 @@ import 'domain/usecases/call_next_ticket.dart';
 import 'domain/usecases/call_specific_ticket.dart';
 import 'domain/usecases/complete_current_ticket.dart';
 import 'domain/usecases/get_current_ticket.dart';
+import 'domain/usecases/get_process_status.dart';
 import 'domain/usecases/get_tickets_by_category.dart';
 import 'domain/usecases/register_current_ticket.dart';
 import 'data/services/auth_token_service.dart';
@@ -33,7 +42,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
 
-  // Инициализируем сервис для загрузки токена из хранилища
   final authTokenService = AuthTokenService();
   await authTokenService.initialize();
 
@@ -68,6 +76,16 @@ class MyApp extends StatelessWidget {
             remoteDataSource: PatientRemoteDataSourceImpl(client: httpClient),
           ),
         ),
+        RepositoryProvider<SettingsRepository>(
+          create: (context) => SettingsRepositoryImpl(
+            remoteDataSource: SettingsRemoteDataSourceImpl(client: httpClient),
+          ),
+        ),
+        RepositoryProvider<RegistrarRepository>(
+          create: (context) => RegistrarRepositoryImpl(
+            remoteDataSource: RegistrarRemoteDataSourceImpl(client: httpClient),
+          ),
+        ),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -98,6 +116,15 @@ class MyApp extends StatelessWidget {
               ),
               getTicketsByCategory: GetTicketsByCategory(
                 RepositoryProvider.of<TicketRepository>(context),
+              ),
+              getProcessStatus: GetProcessStatus(
+                RepositoryProvider.of<SettingsRepository>(context),
+              ),
+              getRegistrarPriorities: GetRegistrarPriorities(
+                RepositoryProvider.of<RegistrarRepository>(context),
+              ),
+              getAllServices: GetAllServices(
+                RepositoryProvider.of<RegistrarRepository>(context),
               ),
             ),
           ),

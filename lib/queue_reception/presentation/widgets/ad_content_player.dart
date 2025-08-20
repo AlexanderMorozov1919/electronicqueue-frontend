@@ -31,7 +31,6 @@ class _AdContentPlayerState extends State<AdContentPlayer> {
   @override
   void didUpdateWidget(covariant AdContentPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Пересоздаем плеер только если ID рекламы изменился
     if (oldWidget.ad.id != widget.ad.id) {
       _disposeControllers();
       _initializeContent();
@@ -40,15 +39,12 @@ class _AdContentPlayerState extends State<AdContentPlayer> {
 
   void _initializeContent() {
     if (widget.ad.mediaType == 'image' && widget.ad.imageBytes != null) {
-      // Для изображений используем таймер
-      _imageTimer =
-          Timer(Duration(seconds: widget.ad.durationSec), _onContentFinished);
+      // Используем durationSec из виджета, со значением по умолчанию 5 секунд
+      final duration = widget.ad.durationSec ?? 5;
+      _imageTimer = Timer(Duration(seconds: duration), _onContentFinished);
     } else if (widget.ad.mediaType == 'video' && widget.ad.videoBytes != null) {
-      // Для видео используем Blob URL (только для веба)
       if (kIsWeb) {
-        // Создаем Blob из байтов видео
         final blob = html.Blob([widget.ad.videoBytes!], 'video/mp4');
-        // Создаем временный URL для этого Blob
         _videoObjectUrl = html.Url.createObjectUrlFromBlob(blob);
 
         _videoController =
@@ -56,14 +52,13 @@ class _AdContentPlayerState extends State<AdContentPlayer> {
               ..initialize().then((_) {
                 if (!mounted) return;
                 setState(() {});
-                _videoController?.setVolume(0); // Отключаем звук (требование браузеров для autoplay)
+                _videoController?.setVolume(0);
                 _videoController?.play();
                 _videoController?.addListener(_videoListener);
               });
       } else {
-        // Заглушка для не-веб платформ
         print(
-            "Video playback from memory is only supported on the web platform in this implementation.");
+            "Video playback from memory is only supported on the web platform.");
       }
     }
   }
@@ -76,17 +71,17 @@ class _AdContentPlayerState extends State<AdContentPlayer> {
     final position = _videoController!.value.position;
     final duration = _videoController!.value.duration;
 
-    // Проверяем, что видео доиграло до конца
     if (position > Duration.zero && position >= duration) {
-      _videoController!.removeListener(_videoListener); // Избегаем многократного срабатывания
+      _videoController!.removeListener(_videoListener);
       _loopCount++;
-      if (_loopCount >= widget.ad.repeatCount) {
+      // Используем repeatCount из виджета, со значением по умолчанию 1
+      final repeatCount = widget.ad.repeatCount ?? 1;
+      if (_loopCount >= repeatCount) {
         _onContentFinished();
       } else {
-        // Повторяем воспроизведение
         _videoController?.seekTo(Duration.zero).then((_) {
           _videoController?.play();
-          _videoController?.addListener(_videoListener); // Восстанавливаем слушатель
+          _videoController?.addListener(_videoListener);
         });
       }
     }
@@ -107,7 +102,6 @@ class _AdContentPlayerState extends State<AdContentPlayer> {
     }
     _videoController = null;
 
-    // Очень важно освободить созданный Blob URL, чтобы избежать утечек памяти в браузере
     if (_videoObjectUrl != null) {
       html.Url.revokeObjectUrl(_videoObjectUrl!);
       _videoObjectUrl = null;
@@ -123,7 +117,6 @@ class _AdContentPlayerState extends State<AdContentPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    // Отображаем изображение
     if (widget.ad.mediaType == 'image' && widget.ad.imageBytes != null) {
       return Image.memory(
         widget.ad.imageBytes!,
@@ -134,7 +127,6 @@ class _AdContentPlayerState extends State<AdContentPlayer> {
       );
     }
 
-    // Отображаем видеоплеер
     if (widget.ad.mediaType == 'video' &&
         _videoController != null &&
         _videoController!.value.isInitialized) {
@@ -150,7 +142,6 @@ class _AdContentPlayerState extends State<AdContentPlayer> {
       );
     }
 
-    // Показываем индикатор загрузки, пока контент инициализируется
     return const Center(child: CircularProgressIndicator());
   }
 }

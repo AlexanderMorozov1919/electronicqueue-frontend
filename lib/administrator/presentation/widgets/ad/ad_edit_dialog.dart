@@ -49,6 +49,7 @@ class _AdEditDialogState extends State<AdEditDialog> {
   @override
   void initState() {
     super.initState();
+    print('[AdEditDialog] initState. Editing ad: ${widget.ad != null ? widget.ad!.id : 'new'}');
     if (widget.ad != null) {
       if (widget.ad!.mediaType == 'video') {
         _initialMediaType = MediaType.video;
@@ -77,24 +78,36 @@ class _AdEditDialogState extends State<AdEditDialog> {
   Uint8List _safeBase64Decode(String source) {
     try {
       return base64Decode(source);
-    } catch (e) {
-      print("Error decoding base64 string: $e");
+    } catch (e, s) {
+      print("[AdEditDialog] Error decoding base64 string: $e\n$s");
       return Uint8List(0);
     }
   }
 
   void _initializeVideoPlayer(Uint8List videoBytes) {
+    print('[AdEditDialog] _initializeVideoPlayer started. Bytes length: ${videoBytes.length}');
     if (kIsWeb && videoBytes.isNotEmpty) {
-      _disposeVideoPlayer();
-      final blob = html.Blob([videoBytes], 'video/mp4');
-      _videoObjectUrl = html.Url.createObjectUrlFromBlob(blob);
-      _videoController = VideoPlayerController.networkUrl(Uri.parse(_videoObjectUrl!))
-        ..initialize().then((_) {
-          if (mounted) setState(() {});
-          _videoController?.setVolume(0);
-          _videoController?.play();
-          _videoController?.setLooping(true);
-        });
+      try {
+        _disposeVideoPlayer();
+        final blob = html.Blob([videoBytes], 'video/mp4');
+        _videoObjectUrl = html.Url.createObjectUrlFromBlob(blob);
+        print('[AdEditDialog] Created video object URL: $_videoObjectUrl');
+        _videoController = VideoPlayerController.networkUrl(Uri.parse(_videoObjectUrl!))
+          ..initialize().then((_) {
+            print('[AdEditDialog] Video player initialized.');
+            if (mounted) setState(() {});
+            _videoController?.setVolume(0);
+            _videoController?.play();
+            _videoController?.setLooping(true);
+            print('[AdEditDialog] Video playing.');
+          }).catchError((error, stackTrace) {
+            print('[AdEditDialog] ERROR during video player .initialize(): $error\n$stackTrace');
+          });
+      } catch (e, s) {
+        print('[AdEditDialog] EXCEPTION in _initializeVideoPlayer: $e\n$s');
+      }
+    } else {
+      print('[AdEditDialog] _initializeVideoPlayer skipped. isWeb: $kIsWeb, videoBytes empty: ${videoBytes.isEmpty}');
     }
   }
 
@@ -109,6 +122,7 @@ class _AdEditDialogState extends State<AdEditDialog> {
 
   @override
   void dispose() {
+    print('[AdEditDialog] dispose.');
     _durationController.dispose();
     _repeatCountController.dispose();
     _disposeVideoPlayer();
@@ -116,31 +130,45 @@ class _AdEditDialogState extends State<AdEditDialog> {
   }
 
   Future<void> _pickMedia() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: [..._supportedImageExtensions, ..._supportedVideoExtensions],
-      withData: true,
-    );
+    print('[AdEditDialog] _pickMedia started.');
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: [..._supportedImageExtensions, ..._supportedVideoExtensions],
+        withData: true,
+      );
 
-    if (result != null && result.files.single.bytes != null) {
-      final file = result.files.single;
-      final ext = file.extension?.toLowerCase();
-      
-      if (ext == null || !(_supportedImageExtensions.contains(ext) || _supportedVideoExtensions.contains(ext))) {
-        _showInvalidFileTypeDialog();
-        return;
+      if (result != null && result.files.single.bytes != null) {
+        final file = result.files.single;
+        print('[AdEditDialog] File picked: ${file.name}, size: ${file.size}, ext: ${file.extension}');
+        final ext = file.extension?.toLowerCase();
+
+        if (ext == null || !(_supportedImageExtensions.contains(ext) || _supportedVideoExtensions.contains(ext))) {
+          print('[AdEditDialog] Invalid file type picked: $ext. Showing dialog.');
+          _showInvalidFileTypeDialog();
+          return;
+        }
+
+        final newType = _supportedVideoExtensions.contains(ext) ? MediaType.video : MediaType.image;
+
+        setState(() {
+          _selectedMediaType = newType;
+          print('[AdEditDialog] Media type set to: $newType');
+        });
+        _handleMediaSelected(file.bytes!, file.name);
+      } else {
+        print('[AdEditDialog] File picker returned null or file has no bytes.');
       }
-      
-      final newType = _supportedVideoExtensions.contains(ext) ? MediaType.video : MediaType.image;
-      
-      setState(() {
-        _selectedMediaType = newType;
-      });
-      _handleMediaSelected(file.bytes!, file.name);
+    } catch (e, s) {
+      print('[AdEditDialog] EXCEPTION in _pickMedia: $e\n$s');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка при выборе файла: $e')),
+      );
     }
   }
 
   void _handleMediaSelected(Uint8List bytes, String name) {
+    print('[AdEditDialog] _handleMediaSelected called with file: $name, bytes length: ${bytes.length}, type: $_selectedMediaType');
     setState(() {
       _newMediaBytes = bytes;
       _newFileName = name;
@@ -154,6 +182,7 @@ class _AdEditDialogState extends State<AdEditDialog> {
 
   // ИСПРАВЛЕНИЕ: Замена SnackBar на AlertDialog
   void _showInvalidFileTypeDialog() {
+    print('[AdEditDialog] _showInvalidFileTypeDialog called.');
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -174,22 +203,27 @@ class _AdEditDialogState extends State<AdEditDialog> {
   }
 
   void _handleSubmit() {
+    print('[AdEditDialog] _handleSubmit started.');
     Uint8List? finalMediaBytes = _newMediaBytes ?? (_selectedMediaType == _initialMediaType ? (_initialMediaType == MediaType.image ? _initialImageBytes : _initialVideoBytes) : null);
 
     if (finalMediaBytes == null) {
+      print('[AdEditDialog] _handleSubmit aborted: finalMediaBytes is null.');
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Пожалуйста, выберите файл (изображение или видео)')));
       return;
     }
+    print('[AdEditDialog] _handleSubmit: final media bytes length: ${finalMediaBytes.length}');
 
     final duration = int.tryParse(_durationController.text);
     final repeatCount = int.tryParse(_repeatCountController.text);
 
     if (_selectedMediaType == MediaType.image && (duration == null || duration <= 0)) {
+      print('[AdEditDialog] _handleSubmit aborted: invalid duration for image.');
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Длительность для изображения должна быть положительным числом')));
       return;
     }
 
     if (_selectedMediaType == MediaType.video && (repeatCount == null || repeatCount <= 0)) {
+      print('[AdEditDialog] _handleSubmit aborted: invalid repeat count for video.');
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Количество повторов для видео должно быть положительным числом')));
       return;
     }
@@ -205,10 +239,13 @@ class _AdEditDialogState extends State<AdEditDialog> {
       receptionOn: _receptionOn,
       scheduleOn: _scheduleOn,
     );
+    print('[AdEditDialog] Submitting AdEntity: id=${adEntity.id}, mediaType=${adEntity.mediaType}, isEnabled=${adEntity.isEnabled}');
 
     if (widget.ad == null) {
+      print('[AdEditDialog] Dispatching AddAd event.');
       context.read<AdBloc>().add(AddAd(adEntity));
     } else {
+      print('[AdEditDialog] Dispatching UpdateAdInfo event.');
       context.read<AdBloc>().add(UpdateAdInfo(adEntity));
     }
     Navigator.of(context).pop();
@@ -317,24 +354,42 @@ class _AdEditDialogState extends State<AdEditDialog> {
               const SizedBox(height: 16),
               DropTarget(
                 onDragDone: (detail) async {
-                  if (detail.files.isNotEmpty) {
-                    final file = detail.files.first;
-                    final ext = file.name.split('.').last.toLowerCase();
-                    
-                    if (!(_supportedImageExtensions.contains(ext) || _supportedVideoExtensions.contains(ext))) {
-                       _showInvalidFileTypeDialog();
-                       return;
-                    }
+                  print('[AdEditDialog] onDragDone triggered. File count: ${detail.files.length}');
+                  try {
+                    if (detail.files.isNotEmpty) {
+                      final file = detail.files.first;
+                      final ext = file.name.split('.').last.toLowerCase();
+                      print('[AdEditDialog] File dropped: ${file.name}, size: ${await file.length()}, ext: $ext');
 
-                    final bytes = await file.readAsBytes();
-                    setState(() {
-                       _selectedMediaType = _supportedVideoExtensions.contains(ext) ? MediaType.video : MediaType.image;
-                    });
-                    _handleMediaSelected(bytes, file.name);
+                      if (!(_supportedImageExtensions.contains(ext) || _supportedVideoExtensions.contains(ext))) {
+                        print('[AdEditDialog] Invalid file type dropped: $ext. Showing dialog.');
+                        _showInvalidFileTypeDialog();
+                        return;
+                      }
+
+                      final bytes = await file.readAsBytes();
+                      print('[AdEditDialog] File bytes read. Length: ${bytes.length}');
+                      setState(() {
+                        _selectedMediaType = _supportedVideoExtensions.contains(ext) ? MediaType.video : MediaType.image;
+                        print('[AdEditDialog] Media type set to: $_selectedMediaType');
+                      });
+                      _handleMediaSelected(bytes, file.name);
+                    }
+                  } catch (e, s) {
+                    print('[AdEditDialog] EXCEPTION in onDragDone: $e\n$s');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Ошибка при обработке файла: $e')),
+                    );
                   }
                 },
-                onDragEntered: (detail) => setState(() => _isDragging = true),
-                onDragExited: (detail) => setState(() => _isDragging = false),
+                onDragEntered: (detail) {
+                  print('[AdEditDialog] onDragEntered');
+                  setState(() => _isDragging = true);
+                },
+                onDragExited: (detail) {
+                  print('[AdEditDialog] onDragExited');
+                  setState(() => _isDragging = false);
+                },
                 child: InkWell(
                   onTap: _pickMedia,
                   child: Container(

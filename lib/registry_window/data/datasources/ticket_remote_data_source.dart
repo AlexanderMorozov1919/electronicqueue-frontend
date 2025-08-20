@@ -148,8 +148,19 @@ class TicketRemoteDataSourceImpl implements TicketDataSource {
   }
 
   @override
-  Future<TicketEntity?> getCurrentTicket() async {
-    return null;
+  Future<TicketEntity?> getCurrentTicket(int windowNumber) async {
+    final uri = Uri.parse('$_baseUrl/api/registrar/tickets/current').replace(queryParameters: {'window_number': windowNumber.toString()});
+    final response = await client.get(uri, headers: _getAuthHeaders());
+
+    if (response.statusCode == 200) {
+      final decoded = json.decode(utf8.decode(response.bodyBytes));
+      return TicketModel.fromJson(decoded);
+    } else if (response.statusCode == 404) {
+      return null;
+    } else {
+      final errorBody = json.decode(utf8.decode(response.bodyBytes));
+      throw ServerException(errorBody['error'] ?? 'Не удалось загрузить текущий талон');
+    }
   }
 
   @override

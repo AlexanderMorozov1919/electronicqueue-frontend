@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../domain/entities/service_entity.dart';
 import '../../../domain/entities/ticket_entity.dart';
 import '../../../core/utils/ticket_category.dart';
 
@@ -8,6 +9,8 @@ abstract class TicketState extends Equatable {
   final TicketCategory? selectedCategory;
   final String? infoMessage;
   final TicketEntity? selectedTicket;
+  final bool isAppointmentButtonEnabled;
+  final List<ServiceEntity> availableCategories;
 
   const TicketState({
     this.currentTicket,
@@ -15,6 +18,8 @@ abstract class TicketState extends Equatable {
     this.selectedCategory,
     this.infoMessage,
     this.selectedTicket,
+    this.isAppointmentButtonEnabled = true,
+    this.availableCategories = const [],
   });
 
   @override
@@ -23,7 +28,9 @@ abstract class TicketState extends Equatable {
         ticketsByCategory,
         selectedCategory,
         infoMessage,
-        selectedTicket
+        selectedTicket,
+        isAppointmentButtonEnabled,
+        availableCategories,
       ];
 }
 
@@ -36,6 +43,8 @@ class TicketLoading extends TicketState {
     super.selectedCategory,
     super.infoMessage,
     super.selectedTicket,
+    super.isAppointmentButtonEnabled,
+    super.availableCategories,
   });
 }
 
@@ -46,6 +55,8 @@ class TicketLoaded extends TicketState {
     super.selectedCategory,
     super.infoMessage,
     super.selectedTicket,
+    super.isAppointmentButtonEnabled = true,
+    super.availableCategories = const [],
   });
 
   TicketLoaded copyWith({
@@ -54,6 +65,8 @@ class TicketLoaded extends TicketState {
     TicketCategory? selectedCategory,
     String? infoMessage,
     TicketEntity? selectedTicket,
+    bool? isAppointmentButtonEnabled,
+    List<ServiceEntity>? availableCategories,
     bool clearSelectedTicket = false,
   }) {
     return TicketLoaded(
@@ -63,6 +76,8 @@ class TicketLoaded extends TicketState {
       infoMessage: infoMessage,
       selectedTicket:
           clearSelectedTicket ? null : selectedTicket ?? this.selectedTicket,
+      isAppointmentButtonEnabled: isAppointmentButtonEnabled ?? this.isAppointmentButtonEnabled,
+      availableCategories: availableCategories ?? this.availableCategories,
     );
   }
 }
@@ -76,6 +91,8 @@ class TicketError extends TicketState {
     super.selectedCategory,
     super.infoMessage,
     super.selectedTicket,
+    super.isAppointmentButtonEnabled = true,
+    super.availableCategories = const [],
   });
 
   @override
@@ -85,6 +102,8 @@ class TicketError extends TicketState {
         ticketsByCategory,
         selectedCategory,
         infoMessage,
-        selectedTicket
+        selectedTicket,
+        isAppointmentButtonEnabled,
+        availableCategories,
       ];
 }

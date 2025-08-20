@@ -10,12 +10,24 @@ import 'package:http/http.dart' as http;
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+// --- ИЗМЕНЕНИЕ: ДОБАВЛЕНЫ ИМПОРТЫ ---
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:video_player_web/video_player_web.dart';
+// ------------------------------------
 
 import 'presentation/blocs/schedule_bloc.dart';
 import 'presentation/pages/schedule_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // --- ИЗМЕНЕНИЕ: ИСПРАВЛЕНА РЕГИСТРАЦИЯ ПЛАГИНА ---
+  // Явная регистрация веб-реализации плагина video_player
+  if (kIsWeb) {
+    VideoPlayerPlugin();
+  }
+  // ---------------------------------------------
+  
   await dotenv.load(fileName: ".env");
   await initializeDateFormatting('ru');
 

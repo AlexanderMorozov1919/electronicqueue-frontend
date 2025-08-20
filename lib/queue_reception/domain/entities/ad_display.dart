@@ -7,16 +7,16 @@ class AdDisplay extends Equatable {
   final String mediaType; // "image" or "video"
   final Uint8List? imageBytes;
   final Uint8List? videoBytes;
-  final int durationSec; // for images
-  final int repeatCount; // for videos
+  final int? durationSec; // for images
+  final int? repeatCount; // for videos
 
   const AdDisplay({
     required this.id,
     required this.mediaType,
     this.imageBytes,
     this.videoBytes,
-    required this.durationSec,
-    required this.repeatCount,
+    this.durationSec,
+    this.repeatCount,
   });
 
   factory AdDisplay.fromJson(Map<String, dynamic> json) {
@@ -38,8 +38,8 @@ class AdDisplay extends Equatable {
       mediaType: mediaType,
       imageBytes: image,
       videoBytes: video,
-      durationSec: json['duration_sec'],
-      repeatCount: json['repeat_count'] ?? 1,
+      durationSec: json['duration_sec'], // Может быть null
+      repeatCount: json['repeat_count'], // Может быть null
     );
   }
 
