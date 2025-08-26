@@ -37,7 +37,7 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
   }
 
   @override
-  Future<Either<Failure, void>> createAppointment({required int scheduleId, required int patientId, required int ticketId}) async {
+  Future<Either<Failure, void>> createAppointment({required int scheduleId, int? patientId, required int ticketId}) async {
     try {
       await remoteDataSource.createAppointment(scheduleId: scheduleId, patientId: patientId, ticketId: ticketId);
       return const Right(null);

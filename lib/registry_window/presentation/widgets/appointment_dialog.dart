@@ -3,9 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../domain/entities/doctor_entity.dart';
 import '../blocs/appointment/appointment_bloc.dart';
-import 'patient_search_field.dart';
-import 'appointment_history_dialog.dart';
-import '../../domain/entities/appointment_details_entity.dart';
 
 class AppointmentDialog extends StatefulWidget {
   final String ticketId;
@@ -63,52 +60,31 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
       builder: (context, state) {
         return AlertDialog(
           backgroundColor: const Color(0xFFF1F3F4),
-          title: const Text('Запись пациента к врачу'),
+          title: const Text('Запись к врачу на сегодня'),
           content: SizedBox(
             width: MediaQuery.of(context).size.width * 0.8,
             height: MediaQuery.of(context).size.height * 0.75,
             child: _buildForm(context, state),
           ),
-          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actionsAlignment: MainAxisAlignment.end,
           actions: [
-            ElevatedButton.icon(
-              icon: const Icon(Icons.history),
-              label: const Text('Записи клиента'),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF415BE7), foregroundColor: Colors.white),
-              onPressed: state.selectedPatient == null
-                  ? null
-                  : () {
-                      showDialog(
-                        context: context,
-                        builder: (_) => BlocProvider.value(
-                          value: context.read<AppointmentBloc>(),
-                          child: AppointmentHistoryDialog(patient: state.selectedPatient!),
-                        ),
-                      );
-                    },
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Отмена'),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextButton(
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Отмена'),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4EB8A6), foregroundColor: Colors.white),
-                  onPressed: (state.selectedPatient != null && _selectedSlotId != null && !state.isLoading)
-                      ? () {
-                          context.read<AppointmentBloc>().add(SubmitAppointment(
-                                scheduleId: _selectedSlotId!,
-                                ticketId: int.parse(widget.ticketId),
-                              ));
-                        }
-                      : null,
-                  child: const Text('Создать новую запись'),
-                ),
-              ],
+            const SizedBox(width: 8),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4EB8A6), foregroundColor: Colors.white),
+              onPressed: (_selectedSlotId != null && !state.isLoading)
+                  ? () {
+                      context.read<AppointmentBloc>().add(SubmitAppointment(
+                            scheduleId: _selectedSlotId!,
+                            ticketId: int.parse(widget.ticketId),
+                          ));
+                    }
+                  : null,
+              child: const Text('Создать запись'),
             ),
           ],
         );
@@ -117,94 +93,19 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
   }
 
   Widget _buildForm(BuildContext context, AppointmentState state) {
-    final todaysUnconfirmedAppointments = state.patientAppointments
-        .where((a) =>
-            a.date == DateFormat('yyyy-MM-dd').format(DateTime.now()) &&
-            a.ticketNumber == null)
-        .toList();
-
     return Column(
       children: [
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(flex: 3, child: _buildPatientSelector(context, state)),
-            const SizedBox(width: 16),
             Expanded(flex: 2, child: _buildSpecialtySelector(context, state)),
             const SizedBox(width: 16),
             Expanded(flex: 2, child: _buildDoctorSelector(context, state)),
-            const SizedBox(width: 16),
-            Expanded(flex: 2, child: _buildDateSelector(context, state)),
           ],
         ),
-        if (todaysUnconfirmedAppointments.isNotEmpty)
-          _buildConfirmationSection(context, todaysUnconfirmedAppointments),
-        const Divider(),
-        const SizedBox(height: 16),
+        const Divider(height: 32),
         Expanded(child: _buildScheduler(context, state)),
       ],
-    );
-  }
-
-  Widget _buildConfirmationSection(BuildContext context, List<AppointmentDetailsEntity> appointments) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Container(
-        padding: const EdgeInsets.all(8.0),
-        decoration: BoxDecoration(
-          color: Colors.lightBlue.shade50,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.blue.shade200)
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('У пациента есть запись на сегодня. Подтвердить явку?', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            ...appointments.map((app) => Card(
-              color: Colors.white,
-              child: ListTile(
-                title: Text('К врачу: ${app.doctorName}'),
-                subtitle: Text('Время: ${app.startTime.substring(0, 5)}'),
-                trailing: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4EB8A6),
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Подтвердить'),
-                  onPressed: () {
-                    context.read<AppointmentBloc>().add(ConfirmAppointment(
-                          appointmentId: app.appointmentId,
-                          ticketId: int.parse(widget.ticketId),
-                        ));
-                  },
-                ),
-              ),
-            )),
-          ],
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildPatientSelector(BuildContext context, AppointmentState state) {
-    final bloc = context.read<AppointmentBloc>();
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 0.0),
-        child: PatientSearchField(
-          controller: _patientController,
-          onPatientSelected: (patient) {
-            bloc.add(SelectPatient(patient));
-          },
-          onPatientCleared: () {
-            bloc.add(const SelectPatient(null));
-          },
-        ),
-      ),
     );
   }
 
@@ -254,47 +155,6 @@ class _AppointmentDialogState extends State<AppointmentDialog> {
         context.read<AppointmentBloc>().add(AppointmentDoctorSelected(doctor));
         setState(() { _selectedSlotId = null; });
       },
-    );
-  }
-
-  Widget _buildDateSelector(BuildContext context, AppointmentState state) {
-    return InkWell(
-      onTap: () async {
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: state.selectedDate,
-          firstDate: DateTime.now().subtract(const Duration(days: 30)),
-          lastDate: DateTime.now().add(const Duration(days: 30)),
-          builder: (context, child) {
-            return Theme(
-              data: Theme.of(context).copyWith(
-                colorScheme: const ColorScheme.light(
-                  primary: Color(0xFF415BE7),
-                  onPrimary: Colors.white, 
-                  surface: Colors.white, 
-                  onSurface: Colors.black,
-                ),
-                dialogBackgroundColor: Colors.white,
-              ),
-              child: child!,
-            );
-          }
-        );
-        if (picked != null && picked != state.selectedDate) {
-          context.read<AppointmentBloc>().add(AppointmentDateChanged(picked));
-          setState(() { _selectedSlotId = null; });
-        }
-      },
-      child: InputDecorator(
-        decoration: const InputDecoration(labelText: 'Дата', border: OutlineInputBorder(), fillColor: Colors.white, filled: true),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(DateFormat('dd.MM.yyyy').format(state.selectedDate)),
-            const Icon(Icons.calendar_today),
-          ],
-        ),
-      ),
     );
   }
 

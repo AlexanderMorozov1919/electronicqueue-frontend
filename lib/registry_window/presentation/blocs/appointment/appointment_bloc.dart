@@ -143,15 +143,10 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
   }
 
   Future<void> _onSubmit(SubmitAppointment event, Emitter<AppointmentState> emit) async {
-    if (state.selectedPatient == null) {
-      emit(state.copyWith(error: "Пациент не выбран"));
-      return;
-    }
-
     emit(state.copyWith(isLoading: true, clearError: true, submissionSuccess: false));
     final result = await appointmentRepository.createAppointment(
         scheduleId: event.scheduleId,
-        patientId: state.selectedPatient!.id,
+        patientId: null, // Пациент не указывается
         ticketId: event.ticketId);
 
     result.fold(
