@@ -12,7 +12,7 @@ class ScheduleCard extends StatelessWidget {
     required this.time,
   });
 
-  // Определяет цвет фона в зависимости от статуса
+  // Определяет цвет рамки в зависимости от статуса
   Color _getStatusColor() {
     final statusColors = appTheme.getStatusColors();
     switch (status) {
@@ -34,8 +34,12 @@ class ScheduleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle =
-        Theme.of(context).textTheme.bodySmall?.copyWith(color: appTheme.primaryColor);
+    final statusColor = _getStatusColor();
+    // ИЗМЕНЕНИЕ: Стиль текста теперь черный, крупнее (bodyMedium) и жирный
+    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Colors.black,
+          fontWeight: FontWeight.bold,
+        );
 
     return Container(
       width: double.infinity,
@@ -44,8 +48,12 @@ class ScheduleCard extends StatelessWidget {
         maxHeight: double.infinity,
       ),
       decoration: BoxDecoration(
-        color: _getStatusColor(),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: statusColor, // Цвет рамки зависит от статуса
+          width: 2.0,
+        ),
       ),
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
       child: Column(
