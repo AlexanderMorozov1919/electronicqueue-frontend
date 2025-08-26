@@ -17,42 +17,54 @@ class PhoneInputScreen extends StatefulWidget {
 
 class _PhoneInputScreenState extends State<PhoneInputScreen> {
   final TextEditingController _controller = TextEditingController();
+  // 1. Изменена маска для более гибкого управления вводом
   final MaskTextInputFormatter _maskFormatter = MaskTextInputFormatter(
-    mask: '+7 (###) ###-##-##',
+    mask: '+# (###) ###-##-##',
     filter: {"#": RegExp(r'[0-9]')},
   );
   final TicketApi _api = TicketApi();
   bool _isLoading = false;
 
+  // 2. Полностью переработанный метод для обработки нажатий клавиш
   void _onKeyPressed(String value) {
-    _maskFormatter.formatEditUpdate(
+    String unmaskedText = _maskFormatter.getUnmaskedText();
+
+    // Если поле пустое, применяем специальную логику для первой цифры
+    if (unmaskedText.isEmpty) {
+      if (value == '8' || value == '7') {
+        unmaskedText = '7'; // Ввод 7 или 8 в начале всегда приводит к '7'
+      } else {
+        unmaskedText = '7$value'; // Для других цифр подставляем '7' и введенную цифру
+      }
+    } else {
+      // Добавляем цифру, если лимит не превышен
+      if (unmaskedText.length < 11) {
+        unmaskedText += value;
+      }
+    }
+
+    // Обновляем контроллер с отформатированным значением
+    _controller.value = _maskFormatter.formatEditUpdate(
       _controller.value,
       TextEditingValue(
-        text: _controller.text + value,
-        selection: TextSelection.collapsed(offset: _controller.text.length + 1),
+        text: unmaskedText,
+        selection: TextSelection.collapsed(offset: unmaskedText.length),
       ),
     );
-    setState(() {
-      _controller.text = _maskFormatter.getMaskedText();
-      _controller.selection =
-          TextSelection.fromPosition(TextPosition(offset: _controller.text.length));
-    });
   }
 
+  // 3. Улучшенный метод для удаления символов
   void _onBackspace() {
-    if (_controller.text.isNotEmpty) {
-      final unmasked = _maskFormatter.getUnmaskedText();
-      if (unmasked.isEmpty) return;
-      _maskFormatter.clear();
-      _maskFormatter.formatEditUpdate(
-        TextEditingValue.empty,
-        TextEditingValue(text: unmasked.substring(0, unmasked.length - 1)),
+    String unmaskedText = _maskFormatter.getUnmaskedText();
+    if (unmaskedText.isNotEmpty) {
+      unmaskedText = unmaskedText.substring(0, unmaskedText.length - 1);
+      _controller.value = _maskFormatter.formatEditUpdate(
+        _controller.value,
+        TextEditingValue(
+          text: unmaskedText,
+          selection: TextSelection.collapsed(offset: unmaskedText.length),
+        ),
       );
-      setState(() {
-        _controller.text = _maskFormatter.getMaskedText();
-        _controller.selection =
-            TextSelection.fromPosition(TextPosition(offset: _controller.text.length));
-      });
     }
   }
 
@@ -63,19 +75,20 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
     });
   }
 
-  Future<void> _confirmPhone() async {
+Future<void> _confirmPhone() async {
     final String userInput = _maskFormatter.getUnmaskedText();
-    final String fullPhoneNumber = '7$userInput';
 
-    if (fullPhoneNumber.length != 11) {
+    if (userInput.length != 11) {
       _showError('Введите полный номер телефона.');
       return;
     }
 
     setState(() => _isLoading = true);
 
+    final String fullPhoneNumber = '+$userInput'; 
+
     try {
-      final response = await _api.checkInByPhone(fullPhoneNumber);
+      final response = await _api.checkInByPhone(fullPhoneNumber); 
       final ticketNumber = response['ticket_number'] as String?;
       final serviceName = response['service_name'] as String?;
       final timeout = response['timeout'] as int?;
@@ -147,6 +160,7 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
               const Spacer(flex: 2),
               TextField(
                 controller: _controller,
+                inputFormatters: [_maskFormatter], // Добавляем форматер напрямую
                 readOnly: true,
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: screenWidth * 0.06, letterSpacing: 3),

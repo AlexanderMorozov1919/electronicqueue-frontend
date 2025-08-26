@@ -12,7 +12,7 @@ abstract class AppointmentRemoteDataSource {
   Future<List<ScheduleSlotEntity>> getDoctorSchedule(int doctorId, String date);
   Future<void> createAppointment({
     required int scheduleId,
-    required int patientId,
+    int? patientId,
     required int ticketId,
   });
   Future<List<AppointmentDetailsEntity>> getPatientAppointments(int patientId);
@@ -65,15 +65,19 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
   }
 
   @override
-  Future<void> createAppointment({required int scheduleId, required int patientId, required int ticketId}) async {
+  Future<void> createAppointment({required int scheduleId, int? patientId, required int ticketId}) async {
+    final body = {
+      'schedule_id': scheduleId,
+      'ticket_id': ticketId,
+    };
+    if (patientId != null) {
+      body['patient_id'] = patientId;
+    }
+
     final response = await client.post(
       Uri.parse('$_baseUrl/api/registrar/appointments'),
       headers: _getAuthHeaders(),
-      body: json.encode({
-        'schedule_id': scheduleId,
-        'patient_id': patientId,
-        'ticket_id': ticketId,
-      }),
+      body: json.encode(body),
     );
 
     if (response.statusCode != 201) {

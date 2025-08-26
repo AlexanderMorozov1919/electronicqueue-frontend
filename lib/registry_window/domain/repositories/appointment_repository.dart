@@ -9,7 +9,7 @@ abstract class AppointmentRepository {
   Future<Either<Failure, List<ScheduleSlotEntity>>> getDoctorSchedule(int doctorId, String date);
   Future<Either<Failure, void>> createAppointment({
     required int scheduleId,
-    required int patientId,
+    int? patientId,
     required int ticketId,
   });
   Future<Either<Failure, List<AppointmentDetailsEntity>>> getPatientAppointments(int patientId);
