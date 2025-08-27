@@ -29,8 +29,8 @@ class AdEntity extends Equatable {
       picture: json['picture'],
       video: json['video'],
       mediaType: json['media_type'] ?? 'none',
-      durationSec: json['duration_sec'],
-      repeatCount: json['repeat_count'] ?? 1,
+      durationSec: json['duration_sec'] ?? 0,
+      repeatCount: json['repeat_count'] ?? 0,
       isEnabled: json['is_enabled'],
       receptionOn: json['reception_on'] ?? true,
       scheduleOn: json['schedule_on'] ?? true,
@@ -48,18 +48,34 @@ class AdEntity extends Equatable {
       'schedule_on': scheduleOn,
     };
   }
-
+  
+  // --- ИСПРАВЛЕНИЕ НАЧАЛО ---
+  // Создаем более "умный" JSON для обновления, который отправляет
+  // только релевантные для типа медиа поля.
   Map<String, dynamic> toJsonForUpdate() {
-    return {
-      'picture': picture,
-      'video': video,
-      'duration_sec': durationSec,
-      'repeat_count': repeatCount,
+    final Map<String, dynamic> data = {
       'is_enabled': isEnabled,
       'reception_on': receptionOn,
       'schedule_on': scheduleOn,
     };
+
+    if (picture != null) {
+      data['picture'] = picture;
+    }
+    if (video != null) {
+      data['video'] = video;
+    }
+
+    if (mediaType == 'image') {
+      data['duration_sec'] = durationSec;
+    } else if (mediaType == 'video') {
+      data['repeat_count'] = repeatCount;
+    }
+
+    return data;
   }
+  // --- ИСПРАВЛЕНИЕ КОНЕЦ ---
+
 
   AdEntity copyWith({
     int? id,
