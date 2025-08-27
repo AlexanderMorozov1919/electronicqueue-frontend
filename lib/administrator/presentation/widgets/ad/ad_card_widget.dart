@@ -30,6 +30,23 @@ class _AdCardWidgetState extends State<AdCardWidget> {
   void initState() {
     super.initState();
     print('[AdCardWidget] initState for ad ID: ${widget.ad.id}, mediaType: ${widget.ad.mediaType}');
+    _updateStateFromWidget();
+  }
+
+  // --- ИЗМЕНЕНИЕ НАЧАЛО: Добавлен метод didUpdateWidget ---
+  @override
+  void didUpdateWidget(AdCardWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Проверяем, изменился ли объект ad, который пришел от родителя
+    if (widget.ad != oldWidget.ad) {
+      print('[AdCardWidget] didUpdateWidget for ad ID: ${widget.ad.id}. Data has changed.');
+      // Обновляем внутреннее состояние виджета новыми данными
+      _updateStateFromWidget();
+    }
+  }
+  // --- ИЗМЕНЕНИЕ КОНЕЦ ---
+
+  void _updateStateFromWidget() {
     _fullAd = widget.ad;
     // Если тип медиа определен, но самих данных нет - дозагружаем
     bool needsFetch = (widget.ad.mediaType == 'image' && (widget.ad.picture == null || widget.ad.picture!.isEmpty)) ||
@@ -39,18 +56,21 @@ class _AdCardWidgetState extends State<AdCardWidget> {
 
     if (needsFetch) {
       _fetchAdMedia();
-    } else if (widget.ad.mediaType == 'video' && widget.ad.video != null) {
+    } else if (widget.ad.mediaType == 'video' && widget.ad.video != null && widget.ad.video!.isNotEmpty) {
       _initializeVideoPlayer(_safeBase64Decode(widget.ad.video!));
+    } else if (widget.ad.mediaType == 'image') {
+      // Если это изображение, убедимся, что видеоплеер остановлен
+      _disposeVideoPlayer();
     }
   }
 
-  // Улучшенная функция декодирования
+
   Uint8List _safeBase64Decode(String source) {
     try {
       return base64Decode(source);
     } catch (e, s) {
       print("[AdCardWidget] Error decoding base64 string for ad ID ${widget.ad.id}: $e\n$s");
-      return Uint8List(0); // Возвращаем пустой список байт в случае ошибки
+      return Uint8List(0);
     }
   }
 
@@ -58,7 +78,7 @@ class _AdCardWidgetState extends State<AdCardWidget> {
     print('[AdCardWidget] _initializeVideoPlayer started for ad ID: ${widget.ad.id}');
     if (kIsWeb && videoBytes.isNotEmpty) {
       try {
-        _disposeVideoPlayer(); // Очищаем предыдущий контроллер
+        _disposeVideoPlayer();
         final blob = html.Blob([videoBytes], 'video/mp4');
         _videoObjectUrl = html.Url.createObjectUrlFromBlob(blob);
         print('[AdCardWidget] Created video object URL for ad ID ${widget.ad.id}: $_videoObjectUrl');
@@ -97,9 +117,9 @@ class _AdCardWidgetState extends State<AdCardWidget> {
       return;
     }
     print('[AdCardWidget] _fetchAdMedia started for ad ID: ${widget.ad.id}');
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      // Получаем репозиторий из контекста
       final adRepository = context.read<AdRepository>();
       final getAdById = GetAdById(adRepository);
       print('[AdCardWidget] Calling getAdById(${widget.ad.id})');
@@ -178,9 +198,7 @@ class _AdCardWidgetState extends State<AdCardWidget> {
         value: context.read<AdBloc>(),
         child: AdEditDialog(ad: _fullAd),
       ),
-    ).then((_) {
-       context.read<AdBloc>().add(LoadAds());
-    });
+    );
   }
 
   void _showPreview(BuildContext context) {
@@ -209,6 +227,7 @@ class _AdCardWidgetState extends State<AdCardWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // --- ИЗМЕНЕНИЕ: Всегда используем _fullAd, который обновляется в didUpdateWidget ---
     final adData = _fullAd ?? widget.ad;
 
     return Card(
@@ -311,7 +330,6 @@ class _AdCardWidgetState extends State<AdCardWidget> {
     }
     if (adData.mediaType == 'video' && _videoController != null && _videoController!.value.isInitialized) {
       print('[AdCardWidget] _buildMediaContent: showing video player.');
-      // ИСПРАВЛЕНИЕ: Оборачиваем плеер в IgnorePointer
       return IgnorePointer(
         child: SizedBox.expand(
             child: FittedBox(
