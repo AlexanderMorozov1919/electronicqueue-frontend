@@ -77,4 +77,4 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
       return Left(ServerFailure(e.message));
     }
   }
-}
+} 
