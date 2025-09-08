@@ -70,19 +70,19 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
             comparison = aParsed.$2.compareTo(bParsed.$2);
           }
           break;
-        case 1: // Patient
-          comparison = (a.patientFullName ?? '').compareTo(b.patientFullName ?? '');
-          break;
-        case 2: // Doctor
+        // case 1: // Patient - УДАЛЕНО, индексы сдвигаются
+        //   comparison = (a.patientFullName ?? '').compareTo(b.patientFullName ?? '');
+        //   break;
+        case 1: // Doctor (был индекс 2)
           comparison = (a.doctorFullName ?? '').compareTo(b.doctorFullName ?? '');
           break;
-        case 3: // Specialization
+        case 2: // Specialization (был индекс 3)
           comparison = (a.doctorSpecialization ?? '').compareTo(b.doctorSpecialization ?? '');
           break;
-        case 4: // Cabinet (как число)
+        case 3: // Cabinet (как число) (был индекс 4)
           comparison = (a.cabinetNumber ?? 0).compareTo(b.cabinetNumber ?? 0);
           break;
-        case 5:
+        case 4: // Время приема (был индекс 5)
           final timeA = _parseTime(a.appointmentTime);
           final timeB = _parseTime(b.appointmentTime);
           
@@ -98,8 +98,20 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
             comparison = aDouble.compareTo(bDouble);
           }
           break;
-        case 6: // Status
+        case 5: // Status (был индекс 6)
           comparison = a.status.compareTo(b.status);
+          break;
+        // CalledAt, CompletedAt, Duration - индексы также сдвигаются
+        case 6: // CalledAt
+          comparison = (a.calledAt?.millisecondsSinceEpoch ?? 0)
+              .compareTo(b.calledAt?.millisecondsSinceEpoch ?? 0);
+          break;
+        case 7: // CompletedAt
+          comparison = (a.completedAt?.millisecondsSinceEpoch ?? 0)
+              .compareTo(b.completedAt?.millisecondsSinceEpoch ?? 0);
+          break;
+        case 8: // Duration (по строке, т.к. INTERVAL в Go)
+          comparison = (a.duration ?? '').compareTo(b.duration ?? '');
           break;
         default:
           comparison = 0;
@@ -167,6 +179,7 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
       endTimeFilter: event.endTimeFilter,
     ));
     
+    // После применения фильтров, пересортировываем
     add(SortReport(columnIndex: state.sortColumnIndex, ascending: state.isAscending));
   }
 }

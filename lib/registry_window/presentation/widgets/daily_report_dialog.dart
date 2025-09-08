@@ -212,7 +212,7 @@ class _DailyReportDialogState extends State<DailyReportDialog> {
               sortAscending: state.isAscending,
               columns: [
                 DataColumn(label: const Text('Номер талона'), onSort: (i, a) => _onSort(context, i, a)),
-                DataColumn(label: const Text('ФИО пациента'), onSort: (i, a) => _onSort(context, i, a)),
+                // DataColumn(label: const Text('ФИО пациента'), onSort: (i, a) => _onSort(context, i, a)), // УДАЛЕНО
                 DataColumn(label: const Text('ФИО врача'), onSort: (i, a) => _onSort(context, i, a)),
                 DataColumn(label: const Text('Специализация'), onSort: (i, a) => _onSort(context, i, a)),
                 DataColumn(label: const Text('Кабинет'), onSort: (i, a) => _onSort(context, i, a)),
@@ -225,7 +225,7 @@ class _DailyReportDialogState extends State<DailyReportDialog> {
               rows: state.displayedRows.map((row) {
                 return DataRow(cells: [
                   DataCell(Text(row.ticketNumber)),
-                  DataCell(Text(row.patientFullName ?? '–')),
+                  // DataCell(Text(row.patientFullName ?? '–')), // УДАЛЕНО
                   DataCell(Text(row.doctorFullName ?? '–')),
                   DataCell(Text(row.doctorSpecialization ?? '–')),
                   DataCell(Text(row.cabinetNumber?.toString() ?? '–')),

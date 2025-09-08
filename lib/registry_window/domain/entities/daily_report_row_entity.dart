@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 
 class DailyReportRowEntity extends Equatable {
   final String ticketNumber;
-  final String? patientFullName;
+  // final String? patientFullName; // УДАЛЕНО
   final String? doctorFullName;
   final String? doctorSpecialization;
   final int? cabinetNumber;
@@ -14,7 +14,7 @@ class DailyReportRowEntity extends Equatable {
 
   const DailyReportRowEntity({
     required this.ticketNumber,
-    this.patientFullName,
+    // this.patientFullName, // УДАЛЕНО
     this.doctorFullName,
     this.doctorSpecialization,
     this.cabinetNumber,
@@ -26,31 +26,14 @@ class DailyReportRowEntity extends Equatable {
   });
 
   factory DailyReportRowEntity.fromJson(Map<String, dynamic> json) {
-    String translatedStatus;
-    switch (json['status']) {
-      case 'ожидает':
-        translatedStatus = 'Ожидание';
-        break;
-      case 'приглашен':
-      case 'зарегистрирован':
-      case 'на_приеме':
-        translatedStatus = 'На приёме';
-        break;
-      case 'завершен':
-        translatedStatus = 'Завершён';
-        break;
-      default:
-        translatedStatus = json['status'];
-    }
-
     return DailyReportRowEntity(
       ticketNumber: json['ticket_number'] as String,
-      patientFullName: json['patient_full_name'] as String?,
+      // patientFullName: json['patient_full_name'] as String?, // УДАЛЕНО
       doctorFullName: json['doctor_full_name'] as String?,
       doctorSpecialization: json['doctor_specialization'] as String?,
       cabinetNumber: json['cabinet_number'] as int?,
       appointmentTime: json['appointment_time'] as String?,
-      status: translatedStatus,
+      status: json['status'] as String,
       calledAt: json['called_at'] != null ? DateTime.parse(json['called_at']) : null,
       completedAt: json['completed_at'] != null ? DateTime.parse(json['completed_at']) : null,
       duration: json['duration'] as String?,
@@ -60,7 +43,7 @@ class DailyReportRowEntity extends Equatable {
   @override
   List<Object?> get props => [
         ticketNumber,
-        patientFullName,
+        // patientFullName, // УДАЛЕНО
         doctorFullName,
         doctorSpecialization,
         cabinetNumber,
