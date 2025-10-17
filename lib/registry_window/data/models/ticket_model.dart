@@ -24,8 +24,6 @@ class TicketModel extends TicketEntity {
       return TicketCategory.other;
     }
 
-    // Helper to parse timestamps from the server.
-    // It strips timezone information ('Z') to treat the time as local.
     DateTime? parseAsLocal(String? dateString) {
       if (dateString == null) return null;
       return DateTime.parse(dateString.replaceAll('Z', ''));
