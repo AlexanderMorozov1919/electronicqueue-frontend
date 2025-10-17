@@ -34,15 +34,19 @@ class ScheduleActor extends StatelessWidget {
           Text(
             employeeName,
             style: Theme.of(context).textTheme.bodyLarge,
-            overflow: TextOverflow.ellipsis,
-            softWrap: false,
+            // --- ИЗМЕНЕНИЯ ---
+            softWrap: true, // Разрешаем перенос текста
+            // overflow убран, чтобы текст не обрезался
+            // -----------------
           ),
           const SizedBox(height: 4),
           Text(
             equipmentName,
             style: Theme.of(context).textTheme.bodyMedium,
-            overflow: TextOverflow.ellipsis,
-            softWrap: false,
+            // --- ИЗМЕНЕНИЯ ---
+            softWrap: true, // Разрешаем перенос текста
+            // overflow убран, чтобы текст не обрезался
+            // -----------------
           ),
           const SizedBox(height: 4),
           if (cabinet != null)

@@ -4,12 +4,14 @@ class ScheduleCard extends StatelessWidget {
   final String time;
   final String status;
   final AppTheme appTheme;
+  final EdgeInsetsGeometry? padding;
 
   const ScheduleCard({
     super.key,
     required this.appTheme,
     required this.status,
     required this.time,
+    this.padding,
   });
 
   // Определяет цвет рамки в зависимости от статуса
@@ -35,7 +37,7 @@ class ScheduleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = _getStatusColor();
-    // ИЗМЕНЕНИЕ: Стиль текста теперь черный, крупнее (bodyMedium) и жирный
+    // --- ИЗМЕНЕНИЕ: Стиль текста снова всегда по умолчанию ---
     final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
           color: Colors.black,
           fontWeight: FontWeight.bold,
@@ -55,7 +57,7 @@ class ScheduleCard extends StatelessWidget {
           width: 2.0,
         ),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+      padding: padding ?? const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

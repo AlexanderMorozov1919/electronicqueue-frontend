@@ -91,6 +91,7 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
       return;
     }
 
+    // Эта функция вызывает перерисовку с новыми индексами страниц
     setState(() {
       _verticalCurrentPage++;
       if (_verticalCurrentPage >= totalVerticalPagesForCurrentPage) {
@@ -99,7 +100,8 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
       }
     });
 
-    _startPageCycling(); // Планируем следующий вызов
+    // После перерисовки снова запускаем таймер на следующую прокрутку
+    _startPageCycling(); 
   }
 
   @override
@@ -162,7 +164,7 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
       ));
       currentTime = currentTime.add(const Duration(minutes: 30));
     }
-    // Добавляем последнюю точку, чтобы замкнуть интервал
+    
     if (points.isEmpty || points.last.time.isBefore(maxTime)) {
       points.add(TimePoint(time: maxTime, isAxis: maxTime.minute == 0));
     }
@@ -241,31 +243,32 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
                 children: [
                   Expanded(
                     child: BlocConsumer<ScheduleBloc, ScheduleState>(
+                      listenWhen: (previous, current) {
+                        if (previous is! ScheduleLoaded && current is ScheduleLoaded) {
+                          return true;
+                        }
+                        if (previous is ScheduleLoaded && current is ScheduleLoaded) {
+                          return previous.schedule != current.schedule;
+                        }
+                        return false;
+                      },
                       listener: (context, state) {
-                        if (state is ScheduleLoaded && _timer == null) {
+                        if (state is ScheduleLoaded) {
                           _startPageCycling();
                         }
                       },
                       builder: (context, state) {
-                        if (state is ScheduleInitial ||
-                            state is ScheduleLoading) {
-                          return const Center(
-                              child: CircularProgressIndicator());
+                        if (state is ScheduleInitial || state is ScheduleLoading) {
+                          return const Center(child: CircularProgressIndicator());
                         } else if (state is ScheduleLoaded) {
-                          final schedule = state.schedule;
-                          if (schedule.doctors.isEmpty) {
-                            return const Center(
-                                child:
-                                    Text('На сегодня расписание отсутствует.'));
+                          if (state.schedule.doctors.isEmpty) {
+                            return const Center(child: Text('На сегодня расписание отсутствует.'));
                           }
                           return _buildScheduleView(context, state, appTheme);
                         } else if (state is ScheduleError) {
-                          return Center(
-                              child: Text(
-                                  'Не удалось загрузить расписание: ${state.message}'));
+                          return Center(child: Text('Не удалось загрузить расписание: ${state.message}'));
                         } else {
-                          return const Center(
-                              child: Text('Произошла неизвестная ошибка.'));
+                          return const Center(child: Text('Произошла неизвестная ошибка.'));
                         }
                       },
                     ),
@@ -315,23 +318,21 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
       TodayScheduleEntity schedule, AppTheme appTheme) {
     const double timeColumnWidth = 70.0;
     const double minDoctorColumnWidth = 280.0;
-    const double sectionHeight = 60.0;
+    // --- ИЗМЕНЕНИЕ НАЧАТО ---
+    // Увеличиваем базовую высоту секции, чтобы дать больше места карточкам
+    const double sectionHeight = 80.0;
+    // --- ИЗМЕНЕНИЕ ОКОНЧЕНО ---
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // --- 1. РАСЧЕТ ПАРАМЕТРОВ ПАГИНАЦИИ ---
         final availableWidth = constraints.maxWidth - timeColumnWidth;
-        final newDoctorsPerPage =
-            max(1, (availableWidth / minDoctorColumnWidth).floor());
+        final newDoctorsPerPage = max(1, (availableWidth / minDoctorColumnWidth).floor());
+        final availableHeight = constraints.maxHeight - 135;
+        final newTimeSlotsPerPage = max(1, (availableHeight / sectionHeight).floor());
 
-        // Высота одного слота + отступ
-        final availableHeight =
-            constraints.maxHeight - 135; // Вычитаем высоту шапки врача
-        final newTimeSlotsPerPage =
-            max(1, (availableHeight / sectionHeight).floor());
+        bool dimensionsChanged = _doctorsPerPage != newDoctorsPerPage || _timeSlotsPerPage != newTimeSlotsPerPage;
 
-        if (_doctorsPerPage != newDoctorsPerPage ||
-            _timeSlotsPerPage != newTimeSlotsPerPage) {
+        if (dimensionsChanged) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               setState(() {
@@ -340,26 +341,33 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
                 _currentPage = 0;
                 _verticalCurrentPage = 0;
               });
-              _startPageCycling();
             }
           });
         }
-
-        // --- 2. ПОЛУЧЕНИЕ ВРАЧЕЙ ДЛЯ ТЕКУЩЕЙ ГОРИЗОНТАЛЬНОЙ СТРАНИЦЫ ---
+        
         final totalDoctors = schedule.doctors.length;
-        final totalHorizontalPages = (totalDoctors / _doctorsPerPage).ceil();
+        int totalHorizontalPages = (totalDoctors / _doctorsPerPage).ceil();
+        if (totalHorizontalPages == 0) totalHorizontalPages = 1;
 
-        if (_currentPage >= totalHorizontalPages && totalHorizontalPages > 0) {
+        if (_currentPage >= totalHorizontalPages) {
           _currentPage = 0;
           _verticalCurrentPage = 0;
         }
 
         final startIndex = _currentPage * _doctorsPerPage;
         final endIndex = min(startIndex + _doctorsPerPage, totalDoctors);
-
         final doctorsToShow = (totalDoctors > 0 && startIndex < endIndex)
             ? schedule.doctors.sublist(startIndex, endIndex)
             : <DoctorScheduleEntity>[];
+            
+        final pageTimes = _calculateMinMaxForDoctors(doctorsToShow, schedule.date);
+        final fullTimePoints = _generateTimePoints(pageTimes.minTime, pageTimes.maxTime);
+        final totalTimePoints = fullTimePoints.isNotEmpty ? fullTimePoints.length - 1 : 0;
+        final totalVerticalPages = max(1, (totalTimePoints / _timeSlotsPerPage).ceil());
+        
+        if (_verticalCurrentPage >= totalVerticalPages) {
+          _verticalCurrentPage = 0; 
+        }
 
         final double actualDoctorColumnWidth;
         if (doctorsToShow.isNotEmpty) {
@@ -368,32 +376,13 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
           actualDoctorColumnWidth = minDoctorColumnWidth;
         }
 
-        // --- 3. ПОЛУЧЕНИЕ И НАРЕЗКА ВРЕМЕННЫХ ТОЧЕК ---
-        final pageTimes =
-            _calculateMinMaxForDoctors(doctorsToShow, schedule.date);
-        final fullTimePoints =
-            _generateTimePoints(pageTimes.minTime, pageTimes.maxTime);
-
-        final totalTimePoints =
-            fullTimePoints.isNotEmpty ? fullTimePoints.length - 1 : 0;
-        final totalVerticalPages =
-            max(1, (totalTimePoints / _timeSlotsPerPage).ceil());
-
-        if (_verticalCurrentPage >= totalVerticalPages &&
-            totalVerticalPages > 0) {
-          _verticalCurrentPage = 0;
-        }
-
         final verticalStartIndex = _verticalCurrentPage * _timeSlotsPerPage;
-        final verticalEndIndex = min(
-            verticalStartIndex + _timeSlotsPerPage + 1, fullTimePoints.length);
+        final verticalEndIndex = min(verticalStartIndex + _timeSlotsPerPage + 1, fullTimePoints.length);
 
-        final visibleTimePoints =
-            (fullTimePoints.isNotEmpty && verticalStartIndex < verticalEndIndex)
+        final visibleTimePoints = (fullTimePoints.isNotEmpty && verticalStartIndex < verticalEndIndex)
                 ? fullTimePoints.sublist(verticalStartIndex, verticalEndIndex)
                 : <TimePoint>[];
 
-        // --- 4. ПОСТРОЕНИЕ ВИДЖЕТОВ ---
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           physics: const NeverScrollableScrollPhysics(),
@@ -406,8 +395,7 @@ class _ScheduleWidgetState extends State<ScheduleWidget> {
                   timePoints: visibleTimePoints),
               for (final doctor in doctorsToShow.cast<DoctorScheduleModel>())
                 ScheduleColumn(
-                  key: ValueKey(
-                      'col-${doctor.id}-${_currentPage}-${_verticalCurrentPage}'),
+                  key: ValueKey('col-${doctor.id}-${_currentPage}-${_verticalCurrentPage}'),
                   appTheme: appTheme,
                   doctorSchedule: doctor,
                   date: schedule.date,
