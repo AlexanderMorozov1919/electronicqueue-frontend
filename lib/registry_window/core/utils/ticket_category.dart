@@ -1,9 +1,9 @@
 enum TicketCategory {
   all('Все категории'),
+  makeAppointment('Записаться'),
   byAppointment('Прием по записи'),
-  makeAppointment('Запись на прием'),
   tests('Анализы'),
-  other('Другой вопрос');
+  other('Получить результаты');
 
   final String name;
   const TicketCategory(this.name);

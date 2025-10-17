@@ -17,7 +17,6 @@ class PhoneInputScreen extends StatefulWidget {
 
 class _PhoneInputScreenState extends State<PhoneInputScreen> {
   final TextEditingController _controller = TextEditingController();
-  // 1. Изменена маска для более гибкого управления вводом
   final MaskTextInputFormatter _maskFormatter = MaskTextInputFormatter(
     mask: '+# (###) ###-##-##',
     filter: {"#": RegExp(r'[0-9]')},
@@ -25,25 +24,21 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
   final TicketApi _api = TicketApi();
   bool _isLoading = false;
 
-  // 2. Полностью переработанный метод для обработки нажатий клавиш
   void _onKeyPressed(String value) {
     String unmaskedText = _maskFormatter.getUnmaskedText();
 
-    // Если поле пустое, применяем специальную логику для первой цифры
     if (unmaskedText.isEmpty) {
       if (value == '8' || value == '7') {
-        unmaskedText = '7'; // Ввод 7 или 8 в начале всегда приводит к '7'
+        unmaskedText = '7';
       } else {
-        unmaskedText = '7$value'; // Для других цифр подставляем '7' и введенную цифру
+        unmaskedText = '7$value';
       }
     } else {
-      // Добавляем цифру, если лимит не превышен
       if (unmaskedText.length < 11) {
         unmaskedText += value;
       }
     }
 
-    // Обновляем контроллер с отформатированным значением
     _controller.value = _maskFormatter.formatEditUpdate(
       _controller.value,
       TextEditingValue(
@@ -53,7 +48,6 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
     );
   }
 
-  // 3. Улучшенный метод для удаления символов
   void _onBackspace() {
     String unmaskedText = _maskFormatter.getUnmaskedText();
     if (unmaskedText.isNotEmpty) {
@@ -160,7 +154,7 @@ Future<void> _confirmPhone() async {
               const Spacer(flex: 2),
               TextField(
                 controller: _controller,
-                inputFormatters: [_maskFormatter], // Добавляем форматер напрямую
+                inputFormatters: [_maskFormatter],
                 readOnly: true,
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: screenWidth * 0.06, letterSpacing: 3),

@@ -19,7 +19,7 @@ class TicketsListSection extends StatelessWidget {
             ? state.ticketsByCategory[selectedCategory] ?? []
             : [];
         
-        // --- НОВАЯ ГИБРИДНАЯ ЛОГИКА СОРТИРОВКИ ---
+        // --- ГИБРИДНАЯ ЛОГИКА СОРТИРОВКИ ---
         tickets.sort((a, b) {
           // Функция для определения числового приоритета статуса
           int getStatusPriority(String status) {
@@ -101,7 +101,7 @@ class TicketsListSection extends StatelessWidget {
                             final isSelected = selectedTicketId == ticket.id;
                             final canBeCalled = ticket.status == 'ожидает';
 
-                            // Логика для визуального выделения остается той же
+                            // Логика для визуального выделения
                             bool isUrgent = false;
                             if (ticket.status == 'ожидает' && ticket.appointmentTime != null) {
                                 final now = DateTime.now();
