@@ -11,6 +11,7 @@ import '../../../domain/usecases/get_registrar_priorities.dart';
 import '../../../domain/usecases/get_tickets_by_category.dart';
 import '../../../domain/usecases/register_current_ticket.dart';
 import '../../../domain/entities/ticket_entity.dart';
+import '../../../domain/entities/service_entity.dart'; 
 import 'ticket_event.dart';
 import 'ticket_state.dart';
 
@@ -55,29 +56,38 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
     
     await prioritiesResult.fold(
       (failure) async {
+        if (isClosed) return;
         emit(TicketError(message: failure.message, currentTicket: state.currentTicket));
       },
       (priorities) async {
+        List<ServiceEntity> finalCategories;
         if (priorities.isNotEmpty) {
-          emit(TicketLoaded(
-            availableCategories: priorities,
-            currentTicket: state.currentTicket,
-            selectedCategory: state.selectedCategory,
-            ticketsByCategory: state.ticketsByCategory,
-            isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
-          ));
+          finalCategories = priorities;
         } else {
           final allServicesResult = await getAllServices();
-          allServicesResult.fold(
-            (failure) => emit(TicketError(message: failure.message, currentTicket: state.currentTicket)),
-            (allServices) => emit(TicketLoaded(
-              availableCategories: allServices,
-              currentTicket: state.currentTicket,
-              selectedCategory: state.selectedCategory,
-              ticketsByCategory: state.ticketsByCategory,
-              isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
-            )),
+          finalCategories = await allServicesResult.fold(
+            (failure) {
+              if (!isClosed) emit(TicketError(message: failure.message, currentTicket: state.currentTicket));
+              return <ServiceEntity>[];
+            },
+            (allServices) => allServices,
           );
+        }
+
+        if (isClosed) return;
+
+        final bool isCategoryNotSelected = state.selectedCategory == null;
+        
+        emit(TicketLoaded(
+          availableCategories: finalCategories,
+          currentTicket: state.currentTicket,
+          selectedCategory: isCategoryNotSelected ? TicketCategory.all : state.selectedCategory,
+          ticketsByCategory: state.ticketsByCategory,
+          isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
+        ));
+
+        if (isCategoryNotSelected) {
+          add(const LoadTicketsByCategoryEvent(TicketCategory.all));
         }
       },
     );
@@ -184,6 +194,8 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
       (ticket) {
         emit(TicketLoaded(
           currentTicket: ticket,
+          ticketsByCategory: state.ticketsByCategory,
+          selectedCategory: state.selectedCategory,
           availableCategories: state.availableCategories,
           isAppointmentButtonEnabled: state.isAppointmentButtonEnabled
         ));
@@ -273,7 +285,10 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
     final TicketEntity? ticketToUpdate = state.currentTicket;
     if (ticketToUpdate != null) {
       emit(TicketLoading(
-        currentTicket: ticketToUpdate, 
+        currentTicket: ticketToUpdate,
+        ticketsByCategory: state.ticketsByCategory,
+        selectedCategory: state.selectedCategory,
+        selectedTicket: state.selectedTicket,
         availableCategories: state.availableCategories,
         isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
       ));
@@ -284,12 +299,15 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
         (failure) => emit(
             TicketError(
               message: failure.message, 
-              currentTicket: ticketToUpdate, 
+              currentTicket: ticketToUpdate,
+              ticketsByCategory: state.ticketsByCategory,
+              selectedCategory: state.selectedCategory,
+              selectedTicket: state.selectedTicket,
               availableCategories: state.availableCategories,
               isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
             )),
         (_) {
-          final updatedTicket = ticketToUpdate.copyWith(isRegistered: true);
+          final updatedTicket = ticketToUpdate.copyWith(isRegistered: true, status: 'зарегистрирован');
           final newMap =
               Map<TicketCategory, List<TicketEntity>>.from(state.ticketsByCategory);
           final categoryList = newMap[updatedTicket.category];
@@ -321,7 +339,10 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
     final TicketEntity? ticketToUpdate = state.currentTicket;
     if (ticketToUpdate != null) {
       emit(TicketLoading(
-        currentTicket: ticketToUpdate, 
+        currentTicket: ticketToUpdate,
+        ticketsByCategory: state.ticketsByCategory,
+        selectedCategory: state.selectedCategory,
+        selectedTicket: state.selectedTicket,
         availableCategories: state.availableCategories,
         isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
       ));
@@ -332,22 +353,22 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
         (failure) => emit(
             TicketError(
               message: failure.message, 
-              currentTicket: ticketToUpdate, 
+              currentTicket: ticketToUpdate,
+              ticketsByCategory: state.ticketsByCategory,
+              selectedCategory: state.selectedCategory,
+              selectedTicket: state.selectedTicket,
               availableCategories: state.availableCategories,
               isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
             )),
         (_) {
-          final updatedTicket = ticketToUpdate.copyWith(isCompleted: true);
+          final updatedTicket = ticketToUpdate.copyWith(isCompleted: true, status: 'завершен');
           final newMap =
               Map<TicketCategory, List<TicketEntity>>.from(state.ticketsByCategory);
-          final categoryList = newMap[updatedTicket.category];
-
-          if (categoryList != null) {
-            final ticketIndex =
-                categoryList.indexWhere((t) => t.id == updatedTicket.id);
-            if (ticketIndex != -1) {
-              categoryList[ticketIndex] = updatedTicket;
-            }
+          
+          if (newMap.containsKey(updatedTicket.category)) {
+            newMap[updatedTicket.category] = newMap[updatedTicket.category]!
+                .where((t) => t.id != updatedTicket.id)
+                .toList();
           }
 
           emit(TicketLoaded(
@@ -435,7 +456,7 @@ class TicketBloc extends Bloc<TicketEvent, TicketState> {
           currentTicket: state.currentTicket,
           ticketsByCategory: newMap,
           selectedCategory: event.category,
-          selectedTicket: state.selectedTicket,
+          selectedTicket: null, // Сбрасываем выделенный талон при смене категории
           availableCategories: state.availableCategories,
           isAppointmentButtonEnabled: state.isAppointmentButtonEnabled,
         ));
