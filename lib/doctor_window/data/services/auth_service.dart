@@ -4,8 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../../../config/app_config.dart';
+// --- ИЗМЕНЕНИЕ: ИМПОРТ ИНТЕРФЕЙСА ---
+import '../../../../core/http/http_client_interceptor.dart';
 
-class AuthService {
+// --- ИЗМЕНЕНИЕ: РЕАЛИЗАЦИЯ ИНТЕРФЕЙСА ---
+class AuthService implements BaseAuthTokenService {
   AuthService._internal();
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
@@ -16,6 +19,8 @@ class AuthService {
   static const String _doctorKey = 'auth_doctor';
   static final String _baseUrl = AppConfig.apiBaseUrl;
 
+  // --- ИЗМЕНЕНИЕ: РЕАЛИЗАЦИЯ ИНТЕРФЕЙСА ---
+  @override
   String? get token => _token;
   Doctor? get doctor => _doctor;
 
@@ -38,7 +43,7 @@ class AuthService {
     }
   }
 
-  void setAuthData(String token, Doctor doctor) async {
+  Future<void> setAuthData(String token, Doctor doctor) async {
     _token = token;
     _doctor = doctor;
     
@@ -51,13 +56,20 @@ class AuthService {
     }));
   }
 
-  void clear() async {
+  // --- ИЗМЕНЕНИЕ: МЕТОД ВОЗВРАЩАЕТ Future<void> ---
+  Future<void> clear() async {
     _token = null;
     _doctor = null;
     
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_doctorKey);
+  }
+
+  // --- ИЗМЕНЕНИЕ: РЕАЛИЗАЦИЯ ИНТЕРФЕЙСА ЧЕРЕЗ ВЫЗОВ clear() ---
+  @override
+  Future<void> clearToken() async {
+    await clear();
   }
 
   Future<int> getDoctorId() async {

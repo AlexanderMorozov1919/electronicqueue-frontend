@@ -19,6 +19,11 @@ import '../../data/api/doctor_api.dart';
 import 'auth_page.dart';
 import '../blocs/auth/auth_event.dart';
 
+// --- ИЗМЕНЕНИЕ: ИМПОРТ ПЕРЕХВАТЧИКА И СЕРВИСА АУТЕНТИФИКАЦИИ ---
+import '../../../core/http/http_client_interceptor.dart';
+import '../../data/services/auth_service.dart';
+import '../../main_doctor.dart'; // Для доступа к navigatorKey
+
 class DoctorQueueScreen extends StatelessWidget {
   const DoctorQueueScreen({super.key});
 
@@ -64,17 +69,30 @@ class DoctorQueueScreen extends StatelessWidget {
               tooltip: 'Выйти',
               color: Colors.black45,
               onPressed: () {
-                context.read<AuthBloc>().add(SignOutRequested());
+                context.read<AuthBloc>().add(const SignOutRequested());
               },
             ),
           ],
         ),
         body: BlocProvider(
           create: (context) {
-            final doctorApi = DoctorApi();
+            // --- ИЗМЕНЕНИЕ: СОЗДАЕМ И ПЕРЕДАЕМ КЛИЕНТ-ПЕРЕХВАТЧИК ---
+            final authService = AuthService(); // Получаем сервис аутентификации
+            final httpClient = HttpClientInterceptor(
+              http.Client(),
+              authService,
+              () {
+                // Используем глобальный ключ для вызова выхода
+                navigatorKey.currentContext?.read<AuthBloc>().add(const SignOutRequested());
+              },
+            );
+
+            // Теперь DoctorApi создается с правильным клиентом
+            final doctorApi = DoctorApi(client: httpClient);
+            
             final queueDataSource = RemoteQueueDataSource(
               api: doctorApi,
-              client: http.Client(),
+              client: httpClient, // Также передаем его сюда
             );
             final queueRepository = QueueRepositoryImpl(
               dataSource: queueDataSource,

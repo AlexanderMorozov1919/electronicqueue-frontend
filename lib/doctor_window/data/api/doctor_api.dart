@@ -13,16 +13,20 @@ class DoctorApi {
         _authService = AuthService();
 
   Map<String, String> _getHeaders() {
+    // ВАЖНО: При использовании HttpClientInterceptor, он сам добавляет токен.
+    // Но оставим этот метод, так как он добавляет 'Content-Type'.
+    // В будущем, можно и это перенести в перехватчик.
     final token = _authService.token;
-    if (token == null) throw Exception('Токен не найден. Авторизуйтесь.');
+    // Удаляем прямое выбрасывание исключения, так как перехватчик обработает 401
     return {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
+      if (token != null) 'Authorization': 'Bearer $token',
     };
   }
 
   Future<List<Map<String, dynamic>>> getRegisteredTickets() async {
-    final response = await http.get(
+    // --- ИЗМЕНЕНИЕ: http.get -> client.get ---
+    final response = await client.get(
       Uri.parse('$baseUrl/api/doctor/tickets/registered'),
       headers: _getHeaders(),
     );
@@ -39,7 +43,8 @@ class DoctorApi {
   }
 
   Future<Map<String, dynamic>?> getCurrentActiveTicket() async {
-    final response = await http.get(
+    // --- ИЗМЕНЕНИЕ: http.get -> client.get ---
+    final response = await client.get(
       Uri.parse('$baseUrl/api/doctor/tickets/in-progress'),
       headers: _getHeaders(),
     );
@@ -59,7 +64,8 @@ class DoctorApi {
   }
 
   Future<Map<String, dynamic>> startAppointment(int ticketId) async {
-    final response = await http.post(
+    // --- ИЗМЕНЕНИЕ: http.post -> client.post ---
+    final response = await client.post(
       Uri.parse('$baseUrl/api/doctor/start-appointment'),
       headers: _getHeaders(),
       body: json.encode({'ticket_id': ticketId}),
@@ -74,7 +80,8 @@ class DoctorApi {
   }
 
   Future<Map<String, dynamic>> completeAppointment(int ticketId) async {
-    final response = await http.post(
+    // --- ИЗМЕНЕНИЕ: http.post -> client.post ---
+    final response = await client.post(
       Uri.parse('$baseUrl/api/doctor/complete-appointment'),
       headers: _getHeaders(),
       body: json.encode({'ticket_id': ticketId}),
@@ -89,7 +96,8 @@ class DoctorApi {
   }
 
   Future<void> startBreak(int doctorId) async {
-    final response = await http.post(
+    // --- ИЗМЕНЕНИЕ: http.post -> client.post ---
+    final response = await client.post(
       Uri.parse('$baseUrl/api/doctor/start-break'),
       headers: _getHeaders(),
       body: json.encode({'doctor_id': doctorId}),
@@ -103,7 +111,8 @@ class DoctorApi {
   }
 
   Future<void> endBreak(int doctorId) async {
-    final response = await http.post(
+    // --- ИЗМЕНЕНИЕ: http.post -> client.post ---
+    final response = await client.post(
       Uri.parse('$baseUrl/api/doctor/end-break'),
       headers: _getHeaders(),
       body: json.encode({'doctor_id': doctorId}),
@@ -117,7 +126,8 @@ class DoctorApi {
   }
 
   Future<void> setDoctorActive(int doctorId) async {
-    final response = await http.post(
+    // --- ИЗМЕНЕНИЕ: http.post -> client.post ---
+    final response = await client.post(
       Uri.parse('$baseUrl/api/doctor/set-active'),
       headers: _getHeaders(),
       body: json.encode({'doctor_id': doctorId}),
@@ -131,7 +141,8 @@ class DoctorApi {
   }
 
   Future<void> setDoctorInactive(int doctorId) async {
-    final response = await http.post(
+    // --- ИЗМЕНЕНИЕ: http.post -> client.post ---
+    final response = await client.post(
       Uri.parse('$baseUrl/api/doctor/set-inactive'),
       headers: _getHeaders(),
       body: json.encode({'doctor_id': doctorId}),
