@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/http/http_client_interceptor.dart'; // ИМПОРТ
 
-class AuthTokenService {
+class AuthTokenService implements BaseAuthTokenService { // РЕАЛИЗАЦИЯ ИНТЕРФЕЙСА
   AuthTokenService._internal();
   static final AuthTokenService _instance = AuthTokenService._internal();
   factory AuthTokenService() => _instance;
@@ -8,6 +9,7 @@ class AuthTokenService {
   static const String _tokenKey = 'auth_token_administrator';
   String? _token;
 
+  @override // РЕАЛИЗАЦИЯ ИНТЕРФЕЙСА
   String? get token => _token;
 
   Future<void> initialize() async {
@@ -25,6 +27,7 @@ class AuthTokenService {
     }
   }
 
+  @override // РЕАЛИЗАЦИЯ ИНТЕРФЕЙСА
   Future<void> clearToken() async {
     _token = null;
     final prefs = await SharedPreferences.getInstance();

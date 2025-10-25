@@ -38,6 +38,12 @@ import 'presentation/pages/auth_dispatcher.dart';
 import 'presentation/pages/ticket_queue_page.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+// --- ИЗМЕНЕНИЕ: ИМПОРТ ПЕРЕХВАТЧИКА ---
+import '../../../core/http/http_client_interceptor.dart';
+
+// --- ИЗМЕНЕНИЕ: ГЛОБАЛЬНЫЙ КЛЮЧ НАВИГАТОРА ---
+final navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
@@ -45,15 +51,25 @@ void main() async {
   final authTokenService = AuthTokenService();
   await authTokenService.initialize();
 
-  runApp(const MyApp());
+  runApp(MyApp(authTokenService: authTokenService));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final AuthTokenService authTokenService;
+  const MyApp({super.key, required this.authTokenService});
 
   @override
   Widget build(BuildContext context) {
-    final httpClient = http.Client();
+    // --- ИЗМЕНЕНИЕ: СОЗДАНИЕ HTTP-КЛИЕНТА С ПЕРЕХВАТЧИКОМ ---
+    final httpClient = HttpClientInterceptor(
+      http.Client(),
+      authTokenService,
+      () {
+        // Функция выхода при получении 401 ошибки
+        navigatorKey.currentContext?.read<AuthBloc>().add(const LogoutRequested());
+      },
+    );
+
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider<AuthRepository>(
@@ -141,6 +157,8 @@ class MyApp extends StatelessWidget {
           ),
         ],
         child: MaterialApp(
+          // --- ИЗМЕНЕНИЕ: ДОБАВЛЕНИЕ КЛЮЧА НАВИГАТОРА ---
+          navigatorKey: navigatorKey,
           debugShowCheckedModeBanner: false,
           title: 'Кабинет регистратуры',
           theme: ThemeData(

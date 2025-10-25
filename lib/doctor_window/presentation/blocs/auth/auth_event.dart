@@ -10,4 +10,6 @@ class SignInRequested extends AuthEvent {
   const SignInRequested(this.credentials);
 }
 
-class SignOutRequested extends AuthEvent {}
+class SignOutRequested extends AuthEvent {
+  const SignOutRequested();
+}
