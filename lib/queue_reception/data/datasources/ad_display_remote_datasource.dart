@@ -17,7 +17,11 @@ class AdDisplayRemoteDataSource {
     );
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
+      final responseBody = utf8.decode(response.bodyBytes);
+      if (responseBody.isEmpty || responseBody == 'null') {
+        return [];
+      }
+      final List<dynamic> data = json.decode(responseBody);
       return data.map((json) => AdDisplay.fromJson(json)).toList();
     } else {
       throw Exception('Failed to load ads for screen: $screen');

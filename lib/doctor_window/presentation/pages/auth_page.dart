@@ -18,11 +18,25 @@ class _AuthScreenState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   final _loginController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _passwordFocusNode = FocusNode();
+
+  void _submitForm() {
+    if (_formKey.currentState!.validate()) {
+      final credentials = AuthCredentials(
+        login: _loginController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+      context.read<AuthBloc>().add(
+            SignInRequested(credentials),
+          );
+    }
+  }
 
   @override
   void dispose() {
     _loginController.dispose();
     _passwordController.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -88,6 +102,9 @@ class _AuthScreenState extends State<AuthScreen> {
         const SizedBox(height: 8),
         TextFormField(
           controller: _loginController,
+          textInputAction: TextInputAction.next,
+          onFieldSubmitted: (_) =>
+              FocusScope.of(context).requestFocus(_passwordFocusNode),
           decoration: InputDecoration(
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
@@ -122,6 +139,9 @@ class _AuthScreenState extends State<AuthScreen> {
         const SizedBox(height: 8),
         TextFormField(
           controller: _passwordController,
+          focusNode: _passwordFocusNode,
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: (_) => _submitForm(),
           obscureText: true,
           decoration: InputDecoration(
             border: OutlineInputBorder(
@@ -167,19 +187,7 @@ class _AuthScreenState extends State<AuthScreen> {
         return SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: state is AuthLoading
-                ? null
-                : () {
-                    if (_formKey.currentState!.validate()) {
-                      final credentials = AuthCredentials(
-                        login: _loginController.text,
-                        password: _passwordController.text,
-                      );
-                      context.read<AuthBloc>().add(
-                            SignInRequested(credentials),
-                          );
-                    }
-                  },
+            onPressed: state is AuthLoading ? null : _submitForm,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF203AC6),
               padding: const EdgeInsets.symmetric(vertical: 16),

@@ -191,8 +191,12 @@ class _DailyReportDialogState extends State<DailyReportDialog> {
     if (state.error != null) {
       return Center(child: Text('Ошибка: ${state.error}'));
     }
+    
+    if (state.allRows.isEmpty && !state.isLoading) {
+      return const Center(child: Text('За сегодня не было оформлено ни одного талона'));
+    }
     if (state.displayedRows.isEmpty && !state.isLoading) {
-      return const Center(child: Text('Нет данных для отображения.'));
+      return const Center(child: Text('Нет данных, соответствующих фильтрам'));
     }
 
     return Scrollbar(
@@ -212,7 +216,6 @@ class _DailyReportDialogState extends State<DailyReportDialog> {
               sortAscending: state.isAscending,
               columns: [
                 DataColumn(label: const Text('Номер талона'), onSort: (i, a) => _onSort(context, i, a)),
-                // DataColumn(label: const Text('ФИО пациента'), onSort: (i, a) => _onSort(context, i, a)), // УДАЛЕНО
                 DataColumn(label: const Text('ФИО врача'), onSort: (i, a) => _onSort(context, i, a)),
                 DataColumn(label: const Text('Специализация'), onSort: (i, a) => _onSort(context, i, a)),
                 DataColumn(label: const Text('Кабинет'), onSort: (i, a) => _onSort(context, i, a)),
@@ -225,7 +228,6 @@ class _DailyReportDialogState extends State<DailyReportDialog> {
               rows: state.displayedRows.map((row) {
                 return DataRow(cells: [
                   DataCell(Text(row.ticketNumber)),
-                  // DataCell(Text(row.patientFullName ?? '–')), // УДАЛЕНО
                   DataCell(Text(row.doctorFullName ?? '–')),
                   DataCell(Text(row.doctorSpecialization ?? '–')),
                   DataCell(Text(row.cabinetNumber?.toString() ?? '–')),

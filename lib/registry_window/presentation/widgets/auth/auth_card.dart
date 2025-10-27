@@ -3,7 +3,7 @@ import 'login_field.dart';
 import 'password_field.dart';
 import 'login_button.dart';
 
-class AuthCard extends StatelessWidget {
+class AuthCard extends StatefulWidget {
   final GlobalKey<FormState> formKey;
   final TextEditingController loginController;
   final TextEditingController passwordController;
@@ -16,6 +16,25 @@ class AuthCard extends StatelessWidget {
     required this.passwordController,
     required this.onLoginPressed,
   });
+
+  @override
+  State<AuthCard> createState() => _AuthCardState();
+}
+
+class _AuthCardState extends State<AuthCard> {
+  late final FocusNode _passwordFocusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordFocusNode = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    _passwordFocusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +54,7 @@ class AuthCard extends StatelessWidget {
           ],
         ),
         child: Form(
-          key: formKey,
+          key: widget.formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -48,11 +67,18 @@ class AuthCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
-              LoginField(controller: loginController),
+              LoginField(
+                controller: widget.loginController,
+                nextFocusNode: _passwordFocusNode,
+              ),
               const SizedBox(height: 16),
-              PasswordField(controller: passwordController),
+              PasswordField(
+                controller: widget.passwordController,
+                focusNode: _passwordFocusNode,
+                onSubmitted: widget.onLoginPressed,
+              ),
               const SizedBox(height: 32),
-              LoginButton(onPressed: onLoginPressed),
+              LoginButton(onPressed: widget.onLoginPressed),
             ],
           ),
         ),

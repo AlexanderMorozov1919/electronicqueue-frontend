@@ -90,7 +90,14 @@ class SseQueueRemoteDataSource {
         Uri.parse('${AppConfig.apiBaseUrl}/api/tickets/active'),
       );
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+        final responseBody = utf8.decode(response.bodyBytes);
+        if (responseBody.isEmpty || responseBody == 'null') {
+          _tickets.clear();
+          controller.add([]);
+          print("HTTP: No active tickets found.");
+          return;
+        }
+        final List<dynamic> data = jsonDecode(responseBody);
         _tickets.clear();
         for (var item in data) {
           final ticket = Ticket.fromJson(item);

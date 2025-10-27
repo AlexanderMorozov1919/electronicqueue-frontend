@@ -33,7 +33,11 @@ class TicketRemoteDataSourceImpl implements TicketDataSource {
     final response = await client.get(uri, headers: _getAuthHeaders());
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
+      final responseBody = utf8.decode(response.bodyBytes);
+      if (responseBody.isEmpty || responseBody == 'null') {
+        return [];
+      }
+      final List<dynamic> data = json.decode(responseBody);
       return data.map((json) => DailyReportRowEntity.fromJson(json)).toList();
     } else {
       final errorBody = json.decode(utf8.decode(response.bodyBytes));

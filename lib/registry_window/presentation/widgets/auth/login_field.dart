@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 class LoginField extends StatelessWidget {
   final TextEditingController controller;
+  final FocusNode? nextFocusNode;
 
   const LoginField({
     super.key,
     required this.controller,
+    this.nextFocusNode,
   });
 
   @override
@@ -23,6 +25,12 @@ class LoginField extends StatelessWidget {
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
+          textInputAction: TextInputAction.next,
+          onFieldSubmitted: (_) {
+            if (nextFocusNode != null) {
+              FocusScope.of(context).requestFocus(nextFocusNode);
+            }
+          },
           decoration: InputDecoration(
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
