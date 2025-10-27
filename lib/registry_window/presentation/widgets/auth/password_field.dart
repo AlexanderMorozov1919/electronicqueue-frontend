@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 
 class PasswordField extends StatelessWidget {
   final TextEditingController controller;
+  final FocusNode? focusNode;
+  final VoidCallback? onSubmitted;
 
   const PasswordField({
     super.key,
     required this.controller,
+    this.focusNode,
+    this.onSubmitted,
   });
 
   @override
@@ -23,6 +27,9 @@ class PasswordField extends StatelessWidget {
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
+          focusNode: focusNode,
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: (_) => onSubmitted?.call(),
           obscureText: true,
           decoration: InputDecoration(
             border: OutlineInputBorder(
